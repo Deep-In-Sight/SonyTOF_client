@@ -6,6 +6,9 @@
 #include <QGraphicsScene>
 #include <QMutex>
 #include <vector>
+#include "i2c.h"
+#include "freqmod.h"
+#include "calculation.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,6 +23,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
 private slots:
     void socket_Read_Data();
 
@@ -33,10 +39,26 @@ private slots:
 
     void on_comboBox_currentIndexChanged(int index);
 
+    void on_fmodBox_returnPressed();
+
+    void on_lineEdit_offset_returnPressed();
+
+    void on_lineEdit_intgtime_returnPressed();
+
 private:
     void grabFrame();
+    void addColorBar();
+    void updateFmod();
+    void writeReg(i2cReg& r);
+    void setIntegrationTime(int time);
+
     Ui::MainWindow *ui;
+
+    QString host;
+    int port;
     QTcpSocket *socket;
+    i2c* i2c_client;
+    modSetting* modSet;
     QByteArray buffer;
 
     QImage qimg;

@@ -12,12 +12,17 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     calculation.cpp \
-    fp_atan2_lut.cpp
+    fp_atan2_lut.cpp \
+    i2c.cpp \
+    tcpsocket.cpp
 
 HEADERS += \
     mainwindow.h \
     fp_atan2_lut.h \
-    evalkit_constants.h
+    evalkit_constants.h \
+    i2c.h \
+    freqmod.h \
+    calculation.h
 
 FORMS += \
     mainwindow.ui
@@ -26,3 +31,5 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+QMAKE_CXXFLAGS += -O3
