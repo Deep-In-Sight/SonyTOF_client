@@ -9,12 +9,12 @@
 typedef unsigned short uint16_t;
 
 #define MAX_FILTER 10
-
-uint16_t distance[640*480];
-uint16_t amplitude[640*480];
-uint16_t filter_tmp[MAX_FILTER][640*480];
+#define NUMPIX (640*480)
+uint16_t distance[NUMPIX];
+uint16_t amplitude[NUMPIX];
+uint16_t filter_tmp[MAX_FILTER][NUMPIX];
 uint16_t offset = 0;
-double amplitude_tmp[640*480];
+double amplitude_tmp[NUMPIX];
 
 QDateTime* dtime = new QDateTime();
 
@@ -41,71 +41,27 @@ void insertionSort(uint16_t* arr, int n)
 }
 
 //should be called getPhase()
-void getDistance(uint16_t* pDCS, uint16_t** pDistance, bool filter) {
-    int numPix = 640*480;
-    int Q, I;
-
-    qint64 start = dtime->currentMSecsSinceEpoch();
-
-    for (int i = 0; i < numPix; i++) {
-        int16_t dcs0 = pDCS[i] << 4;
-        int16_t dcs2 = pDCS[i + numPix] << 4;
-        int16_t dcs1 = pDCS[i + 2*numPix] << 4;
-        int16_t dcs3 = pDCS[i + 3*numPix] << 4;
-
-        Q = dcs3 - dcs1;
-        I = dcs2 - dcs0;
-
-//        distance[i] = (int16_t)((atan2_lut(Q, I) + MODULO_SHIFT_PI) % MAX_DIST_VALUE); //atan2 from lookup table
-        distance[i] = (uint16_t) ((atan2(Q,I) + M_PI) / (2*M_PI) * ((1<<16) - 1));
-        distance[i] += offset;
-    }
+void getDistance(uint16_t* pData, uint16_t** pDistance, bool filter) {
+//    qint64 start = dtime->currentMSecsSinceEpoch();
 
     if (filter) {
-        filterImage(distance, 3, pDistance);
+        filterImage(pData, 3, pDistance);
     } else {
-        *pDistance = distance;
+        *pDistance = pData;
     }
 
-    qint64 end = dtime->currentMSecsSinceEpoch();
-    qDebug() << __FUNCTION__ << " elapsed time: " << end - start << " ms";
+//    qint64 end = dtime->currentMSecsSinceEpoch();
+//    qDebug() << __FUNCTION__ << " elapsed time: " << end - start << " ms";
 }
 
-void getAmplitude(uint16_t* pDCS, uint16_t** pAmplitude) {
-    int numPix = 640*480;
-    int Q, I;
-    double A, maxA = 0;
+void getAmplitude(uint16_t* pData, uint16_t** pAmplitude) {
+//    qint64 start = dtime->currentMSecsSinceEpoch();
+    int max = 0;
 
-    qint64 start = dtime->currentMSecsSinceEpoch();
+    *pAmplitude = pData;
 
-    int shift = 4;
-    for (int i = 0; i < numPix; i++) {
-        //sensor data is 12bit signed integer =>> shift left 4 bit to expand to 16bit signed
-        int16_t dcs0 = pDCS[i] << shift;
-        int16_t dcs2 = pDCS[i + numPix] << shift;
-        int16_t dcs1 = pDCS[i + 2*numPix] << shift;
-        int16_t dcs3 = pDCS[i + 3*numPix] << shift;
-
-        Q = dcs3 - dcs1;
-        I = dcs2 - dcs0;
-        A = 0.5 * sqrt (Q*Q + I*I);
-
-        if (A < 256)
-            amplitude[i] = A;
-        else
-            amplitude[i] = 255;
-//        amplitude_tmp[i] = A;
-//        if (A > maxA) maxA = A;
-    }
-
-//    for (int i = 0; i < numPix; i++) {
-//        amplitude[i] = (uint16_t) (amplitude_tmp[i]/maxA * 255);
-//    }
-//    qDebug() << "Amplitude scale " << scale << " bits";
-    *pAmplitude = amplitude;
-
-    qint64 end = dtime->currentMSecsSinceEpoch();
-    qDebug() << __FUNCTION__ << " elapsed time: " << end - start << " ms";
+//    qint64 end = dtime->currentMSecsSinceEpoch();
+//    qDebug() << __FUNCTION__ << " elapsed time: " << end - start << " ms";
 }
 
 void filterImage(uint16_t* pImage, int nLoop, uint16_t **pFiltered) {

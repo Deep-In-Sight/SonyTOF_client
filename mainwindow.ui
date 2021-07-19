@@ -246,7 +246,7 @@
      <rect>
       <x>20</x>
       <y>40</y>
-      <width>304</width>
+      <width>451</width>
       <height>31</height>
      </rect>
     </property>
@@ -288,6 +288,13 @@
       <widget class="QLineEdit" name="lineEdit_intgtime">
        <property name="text">
         <string>2000</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox">
+       <property name="text">
+        <string>Amplitude Scale</string>
        </property>
       </widget>
      </item>

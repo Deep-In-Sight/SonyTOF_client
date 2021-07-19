@@ -7,7 +7,9 @@
 #include <QFile>
 #include <QKeyEvent>
 
+#define HW_ACCEL 1
 #define DCS_SIZE (640*480*4*2)
+#define IMG_SIZE (640*480*2)
 #define COLOR_NUM (1<<16)
 #define INT_STEP 100
 
@@ -15,7 +17,7 @@ void getDistance(uint16_t* pDCS, uint16_t** pDistance, bool filter);
 void getAmplitude(uint16_t* pDCS, uint16_t** pDistance);
 bool colorMapEnable = true;
 bool filterEnable = true;
-QVector<QColor> colorVec;
+QColor* colorVec;
 int videoRunning = 0;
 int frameFinish = 1;
 
@@ -46,54 +48,65 @@ enum FMOD : int {
 DISPLAY_MODE displayMode;
 int modFreq;
 
-void colorMap(bool on, uint16_t lumi, int& r, int& g, int& b) {
+void colorMap(bool on, int val, int& r, int& g, int& b) {
     int STEP = COLOR_NUM/8;
-    int COMP_HIGH = 256;
+    int COLOR_MAX = 256;
 
     if (!on) {
-        r = g = b = lumi;
+        r = g = b = val;
     }
-    else if (lumi < STEP) {
+    else if (val < STEP) {
         r = 0;
         g = 0;
-        b = (lumi+STEP)*COMP_HIGH/(2*STEP);
+        b = (val+STEP)*COLOR_MAX/(2*STEP);
     }
-    else if (lumi < 3*STEP) {
+    else if (val < 3*STEP) {
         r = 0;
-        g = (lumi - STEP)*COMP_HIGH/(2*STEP);
-        b = COMP_HIGH-1;
+        g = (val - STEP)*COLOR_MAX/(2*STEP);
+        b = COLOR_MAX-1;
     }
-    else if (lumi < 5*STEP) {
-        r = (lumi - 3*STEP)*COMP_HIGH/(2*STEP);
-        g = COMP_HIGH-1;
-        b = COMP_HIGH-1 - r;
+    else if (val < 5*STEP) {
+        r = (val - 3*STEP)*COLOR_MAX/(2*STEP);
+        g = COLOR_MAX-1;
+        b = COLOR_MAX-1 - r;
     }
-    else if (lumi < 7*STEP) {
-        r = COMP_HIGH-1;
-        g = COMP_HIGH-1 - (lumi - 5*STEP)*COMP_HIGH/(2*STEP);
+    else if (val < 7*STEP) {
+        r = COLOR_MAX-1;
+        g = COLOR_MAX-1 - (val - 5*STEP)*COLOR_MAX/(2*STEP);
         b = 0;
     }
     else {
-        r = COMP_HIGH-1 - (lumi - 7*STEP)*COMP_HIGH/(2*STEP);
+        r = COLOR_MAX-1 - (val - 7*STEP)*COLOR_MAX/(2*STEP);
         g = 0;
         b = 0;
     }
 }
 
-void colorVecInit(int vecLen) {
+//map integer to color
+//vecLen is
+void colorVecInit() {
     int r, g, b;
 
-    for (int i = 0; i < vecLen; i++) {
+    colorVec = new QColor[COLOR_NUM];
+
+    for (int i = 0; i < COLOR_NUM; i++) {
         colorMap(true, i, r, g, b);
-        colorVec.push_back(QColor(r, g, b));
+        colorVec[i] = QColor(r, g, b);
     }
 }
 
 void MainWindow::addColorBar() {
     QImage barImg = QImage(25,660,QImage::Format_RGB888);
+    int H = barImg.height();
+    QColor col[H];
+    //zero to 2pi fixed point (3,13)
+    for (int y = 0; y < H; y++) {
+        int grayVal = (int) (y*COLOR_NUM/H);
+        col[y] = colorVec[grayVal];
+    }
     for (int x = 0; x < barImg.width(); x++) {
-        for (int y = 0; y < barImg.height(); y++) {
-            barImg.setPixelColor(x, y, colorVec.at(y*COLOR_NUM/barImg.height()));
+        for (int y = 0; y < H; y++) {
+            barImg.setPixelColor(x, y, col[y]);
         }
     }
     QPixmap pixmap = QPixmap::fromImage(barImg);
@@ -118,7 +131,8 @@ MainWindow::MainWindow(QWidget *parent)
     width = 640;
     height = 480;
     buffer.clear();
-    colorVecInit(COLOR_NUM);
+    buffer2 = new char[640*480*8];
+    colorVecInit();
     atan2lut_Init();
 
     addColorBar();
@@ -157,18 +171,38 @@ void MainWindow::socket_Read_Data()
         buffer.clear();
         buffer.append(socket->readAll());
         qDebug() << "server response" << QString(buffer).toInt();
+        return;
     }
-    if(socket->bytesAvailable() >= DCS_SIZE ) {
+    int datasz;
+    if (displayMode == DCS_MODE) {
+        datasz = DCS_SIZE;
+    } else {
+        datasz = IMG_SIZE;
+    }
+    if(socket->bytesAvailable() >= datasz ) {
         frameFinish = 1;
-        qDebug() << "socket read time: " << dt->currentMSecsSinceEpoch() - tlast;
-        tlast = dt->currentMSecsSinceEpoch();
+//        qDebug() << "socket read time: " << dt->currentMSecsSinceEpoch() - tlast;
+//        tlast = dt->currentMSecsSinceEpoch();
 
         buffer.clear();
         buffer.append(socket->readAll());
+//        socket->read(buffer2, datasz);
+//        buffer = QByteArray::fromRawData(buffer2, datasz);
+
+//        QThread::msleep(20);
+//        if (!socket->waitForDisconnected(100)){
+//            qDebug() << "tcp disconnect timeout";
+//            socket->disconnectFromHost();
+//        }
+//        qApp->processEvents();
+//        if (videoRunning) {
+//            grabFrame();
+//        }
+
         imageShow(buffer);
 
         if (videoRunning) {
-            videoFp->write(buffer.data(), DCS_SIZE);
+            videoFp->write(buffer.data(), datasz);
         } else {
             if (videoFp) {
                 videoFp->close();
@@ -176,13 +210,20 @@ void MainWindow::socket_Read_Data()
                 videoFp = NULL;
             }
             if (pictureFp){
-                pictureFp->write(buffer.data(), DCS_SIZE);
+                pictureFp->write(buffer.data(), datasz);
                 pictureFp->close();
                 delete pictureFp;
                 pictureFp = NULL;
             }
         }
+//        qDebug() << "Image show time: " << dt->currentMSecsSinceEpoch() - tlast;
+//        tlast = dt->currentMSecsSinceEpoch();
 
+        frameCnt++;
+        if (frameCnt % 100 == 0) {
+            qDebug() << "Framerate: " << 100*1000.0/(dt->currentMSecsSinceEpoch() - tlast) << "fps";
+            tlast = dt->currentMSecsSinceEpoch();
+        }
         if (videoRunning) {
             grabFrame();
         }
@@ -200,17 +241,12 @@ void grayToImage(uint16_t* pData, QImage& img) {
 
 
 
-void grayToColorMap(uint16_t* pData, QImage& img, bool colorEnable) {
+void grayToColorMap(uint16_t* pData, QImage& img) {
 //    int max = 0;
     for(int i = 0 ; i < img.height(); i ++){
         for(int j = 0 ; j < img.width(); j++){
             uint16_t gray = pData[i*img.width()+j];
-//            uint16_t gray = j*30000/640;
-//            if (gray > max) max = gray;
-            if (colorEnable)
-                img.setPixelColor(j,i, colorVec.at(gray));
-            else
-                img.setPixel(j, i, qRgb(gray, gray, gray));
+            img.setPixelColor(j,i, colorVec[gray]);
         }
     }
 //    qDebug() << "max distance = " << max;
@@ -231,7 +267,7 @@ void histogram(uint16_t* pData, int length) {
 
 void MainWindow::imageShow(QByteArray& data)
 {
-    qDebug()<<"show";
+//    qDebug()<<"show";
 
     uint16_t* pAmplitude = NULL;
     uint16_t* pDistance = NULL;
@@ -252,7 +288,10 @@ void MainWindow::imageShow(QByteArray& data)
     case DISTANCE_MODE:
         qimg = QImage(width,height,QImage::Format_RGB888);
         getDistance(pDCS, &pDistance, filterEnable);
-        grayToColorMap(pDistance, qimg, colorMapEnable);
+        if (colorMapEnable)
+            grayToColorMap(pDistance, qimg);
+        else
+            grayToImage(pDistance, qimg);
 //        histogram(pDistance, 640*480);
         break;
     default:
@@ -278,7 +317,7 @@ void MainWindow::grabFrame() {
     }
 //    qDebug() << "Connect successfully!";
 
-    QString str = "getRawData";
+    QString str = "getFrame";
     QByteArray sendData = str.toUtf8();
     socket->write(sendData);
     socket->flush();
@@ -296,10 +335,20 @@ void MainWindow::on_btn_Video_clicked()
             videoFp = NULL;
         }
         videoRunning = 1;
+//        QString cmd = "startVideo";
+//        executeCmd(cmd);
+
         grabFrame();
     } else {
         qDebug() << "stop video";
         videoRunning = 0;
+        if (!socket->waitForDisconnected(100)){
+            qDebug() << "tcp disconnect timeout";
+            socket->disconnectFromHost();
+        }
+        socket->close();
+//        QString cmd = "stopVideo";
+//        executeCmd(cmd);
         return;
     }
 }
@@ -332,22 +381,17 @@ void MainWindow::on_colorMapCheckBox_stateChanged(int arg1)
 void MainWindow::on_comboBox_currentIndexChanged(int index)
 {
     displayMode = (DISPLAY_MODE) index;
+    QString cmd = QString("setMode %1\0").arg(displayMode);
+    executeCmd(cmd);
 }
 
-void MainWindow::updateFmod() {
-
-}
-
-void MainWindow::writeReg(i2cReg& r) {
-//    qDebug() << host << port;
+void MainWindow::executeCmd(QString cmd) {
     socket->connectToHost(host,port);
     if(!socket->waitForConnected(30000))
     {
         qDebug() << "Connection failed!";
         return;
     }
-
-    QString cmd = QString("w %1 %2\0").arg(r.addr, 0, 16).arg(r.val, 0, 16);
     socket->write(cmd.toStdString().c_str());
     socket->flush();
     if (!socket->waitForDisconnected(100)){
@@ -355,6 +399,12 @@ void MainWindow::writeReg(i2cReg& r) {
         socket->disconnectFromHost();
     }
     socket->close();
+}
+
+void MainWindow::writeReg(i2cReg& r) {
+//    qDebug() << host << port;
+    QString cmd = QString("w %1 %2\0").arg(r.addr, 0, 16).arg(r.val, 0, 16);
+    executeCmd(cmd);
 }
 
 void MainWindow::on_fmodBox_returnPressed()
@@ -384,9 +434,12 @@ void MainWindow::on_lineEdit_offset_returnPressed()
 {
     int offsetCM = ui->lineEdit_offset->text().toInt();
     int freq = ui->fmodBox->text().toInt();
-    float range = 300.0/(2*freq);
-    uint16_t phaseOffset = (uint16_t) (offsetCM /100.0 /range *((1<<16)-1));
+    double range = 300.0/(2*freq);
+    uint16_t phaseOffset = (uint16_t) (offsetCM/100.0 /range * 65535);
     setPhaseOffset(phaseOffset);
+    qDebug() << "Offset = " << phaseOffset;
+    QString cmd = QString("setPhaseOffset %1\0").arg(phaseOffset);
+    executeCmd(cmd);
 }
 
 void MainWindow::setIntegrationTime(int timeus){
@@ -426,4 +479,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         }
     }
     return QObject::eventFilter(obj, event);
+}
+
+void MainWindow::on_checkBox_stateChanged(int arg1)
+{
+    qDebug() << "setAmplitude " << arg1;
+    QString cmd = QString("setAmplitudeScale %1\0").arg(arg1);
+    executeCmd(cmd);
 }

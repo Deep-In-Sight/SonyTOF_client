@@ -45,12 +45,14 @@ private slots:
 
     void on_lineEdit_intgtime_returnPressed();
 
+    void on_checkBox_stateChanged(int arg1);
+
 private:
     void grabFrame();
     void addColorBar();
-    void updateFmod();
     void writeReg(i2cReg& r);
     void setIntegrationTime(int time);
+    void executeCmd(QString cmd);
 
     Ui::MainWindow *ui;
 
@@ -60,6 +62,7 @@ private:
     i2c* i2c_client;
     modSetting* modSet;
     QByteArray buffer;
+    char* buffer2;
 
     QImage qimg;
     QGraphicsScene* scene = new QGraphicsScene;
