@@ -22,7 +22,8 @@ HEADERS += \
     evalkit_constants.h \
     i2c.h \
     freqmod.h \
-    calculation.h
+    calculation.h \
+    profile.h
 
 FORMS += \
     mainwindow.ui

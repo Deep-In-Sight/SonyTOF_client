@@ -246,7 +246,7 @@
      <rect>
       <x>20</x>
       <y>40</y>
-      <width>451</width>
+      <width>961</width>
       <height>31</height>
      </rect>
     </property>
@@ -295,6 +295,40 @@
       <widget class="QCheckBox" name="checkBox">
        <property name="text">
         <string>Amplitude Scale</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_i2c_addr">
+       <property name="text">
+        <string>RegAddr</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_i2c_addr"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_i2c_val">
+       <property name="text">
+        <string>RegVal</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_i2c_val"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_i2c_read">
+       <property name="text">
+        <string>Read</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_i2c_write">
+       <property name="text">
+        <string>Write</string>
        </property>
       </widget>
      </item>

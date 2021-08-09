@@ -47,6 +47,10 @@ private slots:
 
     void on_checkBox_stateChanged(int arg1);
 
+    void on_pushButton_i2c_read_clicked();
+
+    void on_pushButton_i2c_write_clicked();
+
 private:
     void grabFrame();
     void addColorBar();

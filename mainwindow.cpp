@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QFile>
 #include <QKeyEvent>
+#include <profile.h>
 
 #define HW_ACCEL 1
 #define DCS_SIZE (640*480*4*2)
@@ -29,7 +30,8 @@ int frameCnt = 0;
 QFile* videoFp = NULL;
 QFile* pictureFp = NULL;
 
-int i2cChanging = 0;
+int smallCmdFlag = 0;
+int serverResp = 0;
 
 enum DISPLAY_MODE : int {
     DCS_MODE = 0,
@@ -167,10 +169,13 @@ void MainWindow::socket_Read_Data()
 //        exit(0);
 //    }
 //    qDebug() << "read";
-    if (i2cChanging) {
+    if (smallCmdFlag) {
+        qDebug() << "server response with " << socket->bytesAvailable() << "bytes";
         buffer.clear();
         buffer.append(socket->readAll());
-        qDebug() << "server response" << QString(buffer).toInt();
+        int16_t* val_int = (int16_t*) buffer.data();
+        qDebug() << "values = " << val_int[0];
+        serverResp = val_int[0];
         return;
     }
     int datasz;
@@ -184,10 +189,10 @@ void MainWindow::socket_Read_Data()
 //        qDebug() << "socket read time: " << dt->currentMSecsSinceEpoch() - tlast;
 //        tlast = dt->currentMSecsSinceEpoch();
 
-        buffer.clear();
-        buffer.append(socket->readAll());
-//        socket->read(buffer2, datasz);
-//        buffer = QByteArray::fromRawData(buffer2, datasz);
+//        buffer.clear();
+//        buffer.append(socket->readAll());
+        socket->read(buffer2, datasz);
+        buffer = QByteArray::fromRawData(buffer2, datasz);
 
 //        QThread::msleep(20);
 //        if (!socket->waitForDisconnected(100)){
@@ -198,8 +203,9 @@ void MainWindow::socket_Read_Data()
 //        if (videoRunning) {
 //            grabFrame();
 //        }
-
+        __TIC_SUM__(IMAGE_SHOW)
         imageShow(buffer);
+        __TOC_SUM__(IMAGE_SHOW)
 
         if (videoRunning) {
             videoFp->write(buffer.data(), datasz);
@@ -225,7 +231,9 @@ void MainWindow::socket_Read_Data()
             tlast = dt->currentMSecsSinceEpoch();
         }
         if (videoRunning) {
-            grabFrame();
+            //get 10 frames a time ->> reduce number of getFrame commands being sent to server ->> squeeze about 10fps more
+            if (frameCnt % 10 == 0)
+                grabFrame();
         }
     }
 }
@@ -335,20 +343,23 @@ void MainWindow::on_btn_Video_clicked()
             videoFp = NULL;
         }
         videoRunning = 1;
-//        QString cmd = "startVideo";
-//        executeCmd(cmd);
+        QString cmd = "startVideo";
+        executeCmd(cmd);
 
         grabFrame();
     } else {
         qDebug() << "stop video";
         videoRunning = 0;
-        if (!socket->waitForDisconnected(100)){
+        if (!socket->waitForDisconnected(1000)){
             qDebug() << "tcp disconnect timeout";
             socket->disconnectFromHost();
         }
         socket->close();
-//        QString cmd = "stopVideo";
-//        executeCmd(cmd);
+        QString cmd = "stopVideo";
+        executeCmd(cmd);
+
+        frameCnt = 0;
+
         return;
     }
 }
@@ -386,6 +397,7 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
 }
 
 void MainWindow::executeCmd(QString cmd) {
+    smallCmdFlag = 1;
     socket->connectToHost(host,port);
     if(!socket->waitForConnected(30000))
     {
@@ -399,6 +411,7 @@ void MainWindow::executeCmd(QString cmd) {
         socket->disconnectFromHost();
     }
     socket->close();
+    smallCmdFlag = 0;
 }
 
 void MainWindow::writeReg(i2cReg& r) {
@@ -410,7 +423,6 @@ void MainWindow::writeReg(i2cReg& r) {
 void MainWindow::on_fmodBox_returnPressed()
 {
     int freq = ui->fmodBox->text().toInt();
-    i2cChanging = 1;
 //    modSet->applySetting(freq);
     freqmod* setting = modSet->getSetting(freq);
 
@@ -424,8 +436,6 @@ void MainWindow::on_fmodBox_returnPressed()
     writeReg(setting->PL_RES_MX);
     writeReg(setting->DIVSELPRE);
     writeReg(setting->DIVSEL);
-
-    i2cChanging = 0;
     addColorBar();
 }
 
@@ -485,5 +495,24 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
 {
     qDebug() << "setAmplitude " << arg1;
     QString cmd = QString("setAmplitudeScale %1\0").arg(arg1);
+    executeCmd(cmd);
+}
+
+void MainWindow::on_pushButton_i2c_read_clicked()
+{
+    QString addr = ui->lineEdit_i2c_addr->text();
+    QString cmd = QString("r ") + addr;
+    qDebug() << "read register cmd: " << cmd;
+    executeCmd(cmd);
+    QString val;
+    ui->lineEdit_i2c_val->setText(val.setNum(serverResp, 16));
+}
+
+void MainWindow::on_pushButton_i2c_write_clicked()
+{
+    QString addr = ui->lineEdit_i2c_addr->text();
+    QString val = ui->lineEdit_i2c_val->text();
+    QString cmd = QString("w ") + addr + QString(" ") + val;
+    qDebug() << "write register cmd: " << cmd;
     executeCmd(cmd);
 }
