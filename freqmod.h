@@ -1,10 +1,15 @@
 #ifndef FREQMOD_H
 #define FREQMOD_H
 
-#include <i2c.h>
 #include <QFile>
 #include <QDebug>
 #include <string.h>
+
+class i2cReg {
+public:
+    uint16_t addr;
+    uint8_t val;
+};
 
 class freqmod {
 public:
@@ -26,50 +31,37 @@ public:
         buildSettings();
     }
 
-    modSetting (i2c* pi2c) : i2c_client(pi2c) {
-        buildSettings();
-    }
-
     ~modSetting() {
         delete modSettings;
     }
 
     //return the setting for a modulation frequency
-    freqmod* getSetting(int freq) {
+    void getSetting(int freq, QList<i2cReg> &regList) {
         if (freq < minFreq || freq > maxFreq) {
-            return NULL;
+            return;
         } else {
             freqmod* set = &modSettings[maxFreq-freq];
             printFreqMod(set);
-            return set;
+            regList.clear();
+            regList.append(set->EXCLK_FREQ_MSB);
+            regList.append(set->EXCLK_FREQ_LSB);
+            regList.append(set->PL_RC_VT);
+            regList.append(set->PL_RC_OP);
+            regList.append(set->PL_FC_MX_MSB);
+            regList.append(set->PL_FC_MX_LSB);
+            regList.append(set->PL_RC_MX);
+            regList.append(set->PL_RES_MX);
+            regList.append(set->DIVSELPRE);
+            regList.append(set->DIVSEL);
         }
     }
 
-    //apply the setting for a modulation frequency
-    int applySetting(int freq) {
-        freqmod* set = getSetting(freq);
-        if (!set) {
-            return -1;
-        }
-        i2c_client->writeReg(set->EXCLK_FREQ_MSB);
-        i2c_client->writeReg(set->EXCLK_FREQ_LSB);
-        i2c_client->writeReg(set->PL_RC_VT);
-        i2c_client->writeReg(set->PL_RC_OP);
-        i2c_client->writeReg(set->PL_FC_MX_MSB);
-        i2c_client->writeReg(set->PL_FC_MX_LSB);
-        i2c_client->writeReg(set->PL_RC_MX);
-        i2c_client->writeReg(set->PL_RES_MX);
-        i2c_client->writeReg(set->DIVSELPRE);
-        i2c_client->writeReg(set->DIVSEL);
-        return 0;
-    }
 private:
     const int minFreq = 4;
     const int maxFreq = 100;
     const int numRegs = 10;
     const int numSettings = maxFreq - minFreq + 1;
     freqmod* modSettings;
-    i2c* i2c_client;
 
     void readRegValues(QString line, uint8_t* values) {
         QStringList vals = line.split(" ");
@@ -123,7 +115,7 @@ private:
 
         modSettings = new freqmod[numSettings];
 
-        QFile fmodData("D:/fmodData.txt");
+        QFile fmodData("fmodData.txt");
         if (!fmodData.open(QIODevice::ReadOnly | QIODevice::Text)) {
             qDebug() << "Cannot open fmod datasheet" << fmodData.errorString();
             exit(-1);
@@ -215,8 +207,6 @@ private:
         qDebug()<< hex << set->DIVSELPRE.addr << " " << set->DIVSELPRE.val;
         qDebug()<< hex << set->DIVSEL.addr << " " << set->DIVSEL.val;
     }
-
-
 };
 
 #endif // FREQMOD_H

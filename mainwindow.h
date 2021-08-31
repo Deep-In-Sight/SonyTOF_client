@@ -2,13 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTcpSocket>
 #include <QGraphicsScene>
-#include <QMutex>
-#include <vector>
-#include "i2c.h"
-#include "freqmod.h"
-#include "calculation.h"
+#include <QElapsedTimer>
+
+#include "imagerthread.h"
+#include "colorizerthread.h"
+#include "filterthread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,51 +26,41 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event);
 
 private slots:
-    void socket_Read_Data();
-
-    void on_btn_Video_clicked();
-
-    void on_btn_picture_clicked();
-
-    void on_medianCheckBox_stateChanged(int arg1);
-
-    void on_colorMapCheckBox_stateChanged(int arg1);
-
-    void on_comboBox_currentIndexChanged(int index);
-
-    void on_fmodBox_returnPressed();
-
+    void on_pushButton_connect_clicked();
+    void on_comboBox_displayMode_currentIndexChanged(int index);
+    void on_pushButton_Video_clicked();
+    void on_pushButton_picture_clicked();
+    void on_checkbox_MedianEnable_stateChanged(int arg1);
+    void on_lineEdit_fmod_returnPressed();
     void on_lineEdit_offset_returnPressed();
-
     void on_lineEdit_intgtime_returnPressed();
-
-    void on_checkBox_stateChanged(int arg1);
-
     void on_pushButton_i2c_read_clicked();
-
     void on_pushButton_i2c_write_clicked();
 
+public slots:
+    void showError(int error, const QString &message);
+    void showResponse(qint16 val, const QString &message);
+    void showI2CReadValue(qint8 val);
+    void imageShow(QImage qImg);
+
+
 private:
-    void grabFrame();
+    void initializeUI();
+    void changeIntegration(bool up);
+    void fps_update();
+
     void addColorBar();
-    void writeReg(i2cReg& r);
-    void setIntegrationTime(int time);
-    void executeCmd(QString cmd);
 
     Ui::MainWindow *ui;
+    ImagerThread *imager;
+    ColorizerThread *colorizer;
+    FilterThread *filter;
 
     QString host;
     int port;
-    QTcpSocket *socket;
-    i2c* i2c_client;
-    modSetting* modSet;
-    QByteArray buffer;
-    char* buffer2;
 
-    QImage qimg;
+    QElapsedTimer etimer;
+
     QGraphicsScene* scene = new QGraphicsScene;
-
-    int width, height;
-    void imageShow(QByteArray&);
 };
 #endif // MAINWINDOW_H
