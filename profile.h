@@ -25,6 +25,16 @@
                    .count()                                           \
             << "us" << std::endl;
 
+#define __TOC_FPS__(tag, frames)                                      \
+  auto __##tag##_end_time = std::chrono::steady_clock::now();         \
+  uint64_t __##tag##_duration_us = std::chrono::duration_cast<std::chrono::microseconds>( \
+    __##tag##_end_time - __##tag##_start_time)                        \
+    .count();                                                         \
+  float __##tag##_fps = frames*1.0*1e6 / __##tag##_duration_us;        \
+  std::cout << #tag << " FPS: "                                       \
+            << __##tag##_fps                                          \
+            << std::endl;
+
 #define __TIC_SUM__(tag)                 \
   static auto __##tag##_total_time = 0U; \
   auto __##tag##_start_time = std::chrono::steady_clock::now();
@@ -50,6 +60,7 @@
 #else
 #define __TIC__(tag)
 #define __TOC__(tag)
+#define __TOC_FPS__(tag, frames)
 #define __TIC_SUM__(tag)
 #define __TOC_SUM__(tag)
 #endif

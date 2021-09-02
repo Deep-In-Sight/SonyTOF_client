@@ -37,7 +37,8 @@ SOURCES += \
         mainwindow.cpp \
     imagerthread.cpp \
     filterthread.cpp \
-    colorizerthread.cpp
+    colorizerthread.cpp \
+    startupdialog.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -45,7 +46,9 @@ HEADERS += \
     imagerthread.h \
     freqmod.h \
     filterthread.h \
-    colorizerthread.h
+    colorizerthread.h \
+    startupdialog.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    startupdialog.ui

@@ -42,15 +42,15 @@ void MainWindow::addColorBar() {
     ui->label_maxDistance_3->setText(QString::asprintf("%.02f m", range));
 }
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget *parent, QString &host, int &port)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     qApp->installEventFilter(this);
 
-    host = "192.168.7.2";
-    port = 50660;
+    this->host = host;
+    this->port = port;
 
     initializeUI();
 }

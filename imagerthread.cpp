@@ -2,6 +2,7 @@
 #include <QDebug>
 
 #include "imagerthread.h"
+#include "profile.h"
 
 ImagerThread::ImagerThread(QObject *parent, QString hostName, qint16 port)
     :QThread(parent)
@@ -183,7 +184,9 @@ void ImagerThread::run()
         } else {
             do_shortCmd("startVideo");
             while (videoRunning) {
+                __TIC__(TCP);
                 do_getFrame(mode, NFRAME);
+                __TOC_FPS__(TCP, NFRAME);
             }
             do_shortCmd("stopVideo");
         }
