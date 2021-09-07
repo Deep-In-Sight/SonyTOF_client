@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "startupdialog.h"
 
+#include <QSplashScreen>
 #include <QApplication>
 
 int main(int argc, char *argv[])
@@ -9,6 +10,7 @@ int main(int argc, char *argv[])
     int port;
     QApplication a(argc, argv);
 
+    QSplashScreen splash(QPixmap("logo_small.png"));
     StartUpDialog* dialog;
     MainWindow *w;
 
@@ -17,8 +19,11 @@ int main(int argc, char *argv[])
 
     if (dialog->result() == QDialog::Accepted) {
         dialog->getHostPort(host, port);
-        w = new MainWindow(nullptr, host, port);
+        splash.show();
+        a.processEvents();
+        w = new MainWindow(nullptr, host, port, &splash);
         w->show();
+        splash.finish(w);
     } else {
         return -1;
     }

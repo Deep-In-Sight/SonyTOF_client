@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QSplashScreen>
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QElapsedTimer>
@@ -19,7 +20,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent, QString &host, int &port);
+    MainWindow(QWidget *parent, QString &host, int &port, QSplashScreen *splash);
     ~MainWindow();
 
 protected:
@@ -43,6 +44,8 @@ public slots:
     void showI2CReadValue(qint8 val);
     void imageShow(QImage qImg);
 
+signals:
+    void splashMessage(const QString &msg, int alignment, const QColor &color);
 
 private:
     void initializeUI();

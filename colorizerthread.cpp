@@ -81,6 +81,12 @@ void ColorizerThread::run() {
             cv::bitwise_not(grayMat8b, grayMat8b_inv);
             cv::applyColorMap(grayMat8b_inv, colorMat, cv::COLORMAP_JET);
             qImg = QImage(colorMat.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
+        } else if (displayMode == DCS_MODE) {
+            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16SC1, rawImageData);
+            grayMat = grayMat * 16; //convert 12bit signed integer to 16bit signed integer by shift right 4 bit
+            grayMat.convertTo(grayMat8b, CV_8SC1, 1/256.0);
+//            cv::imwrite("amplitude.jpg", grayMat8b);
+            qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
         } else {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
             grayMat.convertTo(grayMat8b, CV_8UC1);

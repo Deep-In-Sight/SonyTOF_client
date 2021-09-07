@@ -1,11 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "profile.h"
+
+#include <QSplashScreen>
 #include <QDebug>
 #include <QDateTime>
 #include <QThread>
 #include <QFile>
 #include <QKeyEvent>
-#include <profile.h>
+
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -42,7 +45,7 @@ void MainWindow::addColorBar() {
     ui->label_maxDistance_3->setText(QString::asprintf("%.02f m", range));
 }
 
-MainWindow::MainWindow(QWidget *parent, QString &host, int &port)
+MainWindow::MainWindow(QWidget *parent, QString &host, int &port, QSplashScreen *splash)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
@@ -52,7 +55,9 @@ MainWindow::MainWindow(QWidget *parent, QString &host, int &port)
     this->host = host;
     this->port = port;
 
+    connect(this, MainWindow::splashMessage, splash, QSplashScreen::showMessage);
     initializeUI();
+    disconnect(this, MainWindow::splashMessage, splash, QSplashScreen::showMessage);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -70,6 +75,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::initializeUI() {
 
+    int splashAlign = Qt::AlignBottom | Qt::AlignCenter;
+    QColor textColor = textColor;
+
+    emit splashMessage("Initializing Camera", splashAlign, textColor);
+
     colorizer = new ColorizerThread();
     filter = new FilterThread();
 
@@ -84,21 +94,26 @@ void MainWindow::initializeUI() {
     connect(imager, &ImagerThread::signalNewFrame, colorizer, &ColorizerThread::colorize);
     connect(colorizer, &ColorizerThread::signalImageDone, this, &MainWindow::imageShow);
 
+    emit splashMessage("Set display mode", splashAlign, textColor);
     DISPLAY_MODE mode = DISTANCE_MODE;
     ui->comboBox_displayMode->setCurrentIndex(mode);
     imager->changeDisplayMode(mode);
 
+    emit splashMessage("Set modulation frequency", splashAlign, textColor);
     int freq = 24;
     ui->lineEdit_fmod->setText(QString::number(freq));
     imager->changeFmod(freq);
 
+    emit splashMessage("Set filter mode", splashAlign, textColor);
     ui->checkbox_MedianEnable->setChecked(false);
     imager->enableMedianFilter(false);
 
+    emit splashMessage("Set distance static offset", splashAlign, textColor);
     int offsetCm = 0;
     ui->lineEdit_offset->setText(QString::number(offsetCm));
     imager->changeOffset(offsetCm);
 
+    emit splashMessage("Set integration time", splashAlign, textColor);
     int integration_us = 1000;
     ui->lineEdit_intgtime->setText(QString::number(integration_us));
     imager->changeIntegrationTime(integration_us);
@@ -107,6 +122,8 @@ void MainWindow::initializeUI() {
     ui->lineEdit_i2c_val->setText("");
 
     addColorBar();
+
+    emit splashMessage("Camera configured, starting UI", splashAlign, Qt::white);
 }
 
 MainWindow::~MainWindow()
@@ -119,6 +136,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::imageShow(QImage qImg) {
 //    qDebug() << "new frame to show " << qImg.width() << " " << qImg.height();
+    static QSize lastSize(640, 480);
+    if (lastSize != qImg.size()) {
+        delete scene;
+        scene = new QGraphicsScene;
+        lastSize = qImg.size();
+    }
     QPixmap pixmap = QPixmap::fromImage(qImg);
     scene->clear();
     scene->addPixmap(pixmap);
