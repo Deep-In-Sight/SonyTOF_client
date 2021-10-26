@@ -120,9 +120,10 @@ void ImagerThread::changeFmod(int freq) {
 
     for (i2cReg reg : regList) {
         QString cmd = QString("w %1 %2\0").arg(reg.addr, 0, 16).arg(reg.val, 0, 16);
-        cmds.append(cmd);
+//        cmds.append(cmd);
     }
-
+    QString cmd = QString("changeModFreq %1\0").arg(freq);
+    cmds.append(cmd);
     executeCmd(cmds);
 }
 
@@ -132,7 +133,7 @@ void ImagerThread::changeOffset(int offsetCm) {
 
     qDebug() << "Offset = " << phaseOffset;
 
-    QString cmd = QString("setPhaseOffset %1\0").arg(phaseOffset);
+    QString cmd = QString("changeDistanceOffset %1\0").arg(offsetCm);
     QStringList cmds;
     cmds.append(cmd);
     executeCmd(cmds);
@@ -151,9 +152,12 @@ void ImagerThread::changeIntegrationTime(int timeus){
         uint16_t a = 0x2120 + i;
         uint8_t v = (clk120 >> (byteshift*8)) & 0xFF;
         QString cmd = QString("w %1 %2\0").arg(a, 0, 16).arg(v, 0, 16);
-        cmds.append(cmd);
+        qDebug() << cmd;
+//        cmds.append(cmd);
     }
 
+    QString cmd = QString("changeIntegration %1\0").arg(timeus*1000);
+    cmds.append(cmd);
     executeCmd(cmds);
 }
 

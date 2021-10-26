@@ -28,10 +28,13 @@ public:
 class modSetting {
 public:
     modSetting (){
+        qDebug() << "Building fmod\n";
         buildSettings();
     }
 
     ~modSetting() {
+        qDebug() << "Dumping fmod\n";
+        dump_modSettings();
         delete modSettings;
     }
 
@@ -195,6 +198,7 @@ private:
             set->DIVSEL.val = divsel[i];
         }
     }
+
     void printFreqMod(freqmod* set) {
         qDebug()<< hex << set->EXCLK_FREQ_MSB.addr << " " << set->EXCLK_FREQ_MSB.val;
         qDebug()<< hex << set->EXCLK_FREQ_LSB.addr << " " << set->EXCLK_FREQ_LSB.val;
@@ -206,6 +210,38 @@ private:
         qDebug()<< hex << set->PL_RES_MX.addr << " " << set->PL_RES_MX.val;
         qDebug()<< hex << set->DIVSELPRE.addr << " " << set->DIVSELPRE.val;
         qDebug()<< hex << set->DIVSEL.addr << " " << set->DIVSEL.val;
+    }
+
+    void dump_modSettings() {
+        QFile file("freqmod.txt");
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        QTextStream out(&file);
+
+        for (int i = 0; i < numSettings; i++) {
+            freqmod* set = &modSettings[i];
+
+            out << set->EXCLK_FREQ_MSB.addr << " " << set->EXCLK_FREQ_MSB.val << "\n";
+
+            out << set->EXCLK_FREQ_LSB.addr << " " << set->EXCLK_FREQ_LSB.val << "\n";
+
+            out << set->PL_RC_VT.addr << " " << set->PL_RC_VT.val << "\n";
+
+            out << set->PL_RC_OP.addr << " " << set->PL_RC_OP.val << "\n";
+
+            out << set->PL_FC_MX_MSB.addr << " " << set->PL_FC_MX_MSB.val << "\n";
+
+            out << set->PL_FC_MX_LSB.addr << " " << set->PL_FC_MX_LSB.val << "\n";
+
+            out << set->PL_RC_MX.addr << " " << set->PL_RC_MX.val << "\n";
+
+            out << set->PL_RES_MX.addr << " " << set->PL_RES_MX.val << "\n";
+
+            out << set->DIVSELPRE.addr << " " << set->DIVSELPRE.val << "\n";
+
+            out << set->DIVSEL.addr << " " << set->DIVSEL.val << "\n";
+        }
     }
 };
 
