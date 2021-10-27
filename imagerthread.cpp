@@ -17,6 +17,15 @@ ImagerThread::ImagerThread(QObject *parent, QString hostName, qint16 port)
     this->filterEn = false;
     this->modFreq = 24;
     this->phaseOffset = 0;
+
+    int Timeout = 5*1000;
+    socket = new QTcpSocket;
+    socket->connectToHost(hostName, port);
+    if(!socket->waitForConnected(Timeout))
+    {
+        emit signalError(socket->error(), socket->errorString());
+        return;
+    }
 }
 
 ImagerThread::~ImagerThread()
@@ -30,6 +39,9 @@ ImagerThread::~ImagerThread()
     cond.wakeOne();
     mutex.unlock();
     wait();
+
+    socket->disconnectFromHost();
+    socket->close();
 }
 
 bool ImagerThread::isVideoRunning() {
@@ -40,7 +52,7 @@ void ImagerThread::getFrame()
 {
     videoRunning = false;
     if (!isRunning()) {
-        start();
+        startThread();
     } else {
         mutex.lock();
         cond_notified = true;
@@ -55,7 +67,7 @@ void ImagerThread::startVideo()
         videoRunning = true;
 
         if (!isRunning()) {
-            start();
+            startThread();
         } else {
             mutex.lock();
             cond_notified = true;
@@ -175,10 +187,28 @@ void ImagerThread::i2cReadWrite(bool read, int addr, int val) {
     executeCmd(cmds);
 }
 
+
+void ImagerThread::startThread() {
+    socket->disconnectFromHost();
+    socket->close();
+    delete socket;
+    start();
+}
+
 //video thread
 void ImagerThread::run()
 {
     DISPLAY_MODE mode = display_mode;
+
+    int Timeout = 5*1000;
+
+    socket = new QTcpSocket;
+    socket->connectToHost(hostName, port);
+    if(!socket->waitForConnected(Timeout))
+    {
+        emit signalError(socket->error(), socket->errorString());
+        return;
+    }
 
     while (!quit) {
         //do something lengthy
@@ -189,7 +219,7 @@ void ImagerThread::run()
             do_shortCmd("startVideo");
             while (videoRunning) {
                 __TIC__(TCP);
-                do_getFrame(mode, NFRAME);
+                do_getFrame(mode, 1);
                 __TOC_FPS__(TCP, NFRAME);
             }
             do_shortCmd("stopVideo");
@@ -214,11 +244,14 @@ void ImagerThread::run()
         mode = display_mode;
         mutex.unlock();
     }
+
+    socket->disconnectFromHost();
+    socket->close();
 }
 
 void ImagerThread::do_shortCmd(const QString &cmd)
 {
-    QTcpSocket socket;
+//    QTcpSocket socket;
     QByteArray buffer;
     int Timeout = 5*1000;
 
@@ -229,23 +262,23 @@ void ImagerThread::do_shortCmd(const QString &cmd)
         return;
     }
 
-    socket.connectToHost(hostName, port);
-    if(!socket.waitForConnected(Timeout))
-    {
-        emit signalError(socket.error(), socket.errorString());
-        return;
-    }
-    socket.write(cmd.toStdString().c_str());
-    socket.flush();
+//    socket->connectToHost(hostName, port);
+//    if(!socket->waitForConnected(Timeout))
+//    {
+//        emit signalError(socket->error(), socket->errorString());
+//        return;
+//    }
+    socket->write(cmd.toStdString().c_str());
+    socket->flush();
 
-    while (socket.bytesAvailable() < (int)sizeof(qint16)) {
-        if (!socket.waitForReadyRead(Timeout)) {
-            emit signalError(socket.error(), socket.errorString());
+    while (socket->bytesAvailable() < (int)sizeof(qint16)) {
+        if (!socket->waitForReadyRead(Timeout)) {
+            emit signalError(socket->error(), socket->errorString());
             return;
         }
     }
 
-    buffer = socket.readAll();
+    buffer = socket->readAll();
     qint16* val_int16 = (qint16*) buffer.data();
 
     if (cmd[0] == 'r') {
@@ -256,15 +289,15 @@ void ImagerThread::do_shortCmd(const QString &cmd)
         emit signalNewResponse(val_int16[0], "Server response value: ");
     }
 
-    if (!socket.waitForDisconnected(100)){
-        emit signalError(socket.error(), socket.errorString());
-        socket.disconnectFromHost();
-    }
-    socket.close();
+//    if (!socket->waitForDisconnected(100)){
+//        emit signalError(socket->error(), socket->errorString());
+//        socket->disconnectFromHost();
+//    }
+//    socket->close();
 }
 
 void ImagerThread::do_getFrame(DISPLAY_MODE mode, int nFrame) {
-    QTcpSocket socket;
+//    QTcpSocket socket;
     QByteArray buffer;
     int Timeout = 5*1000;
     int frameSize;
@@ -278,33 +311,33 @@ void ImagerThread::do_getFrame(DISPLAY_MODE mode, int nFrame) {
         frameSize = IMG_W * IMG_H * 2;
     }
 
-    socket.connectToHost(hostName, port);
-    if(!socket.waitForConnected(Timeout))
-    {
-        emit signalError(socket.error(), socket.errorString());
-        return;
-    }
-    socket.write(cmd.toStdString().c_str());
-    socket.flush();
+//    socket->connectToHost(hostName, port);
+//    if(!socket->waitForConnected(Timeout))
+//    {
+//        emit signalError(socket->error(), socket->errorString());
+//        return;
+//    }
+    socket->write(cmd.toStdString().c_str());
+    socket->flush();
 
     while (frameCount < nFrame) {
-        while (socket.bytesAvailable() < frameSize) {
-            if (!socket.waitForReadyRead(Timeout)) {
-                emit signalError(socket.error(), socket.errorString());
+        while (socket->bytesAvailable() < frameSize) {
+            if (!socket->waitForReadyRead(Timeout)) {
+                emit signalError(socket->error(), socket->errorString());
                 return;
             }
         }
-        buffer = socket.read(frameSize);
+        buffer = socket->read(frameSize);
 
         emit signalNewFrame(buffer, (int)mode);
         frameCount++;
     }
 
-    if (!socket.waitForDisconnected(100)){
-        emit signalError(socket.error(), socket.errorString());
-        socket.disconnectFromHost();
-    }
-    socket.close();
+//    if (!socket->waitForDisconnected(100)){
+//        emit signalError(socket->error(), socket->errorString());
+//        socket->disconnectFromHost();
+//    }
+//    socket->close();
 }
 
 void ImagerThread::executeCmd(const QStringList &cmds)

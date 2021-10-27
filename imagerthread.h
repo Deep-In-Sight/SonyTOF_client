@@ -2,6 +2,7 @@
 #define IMAGERTHREAD_H
 
 #include <QThread>
+#include <QTcpSocket>
 #include <QMutex>
 #include <QWaitCondition>
 #include <QQueue>
@@ -50,6 +51,7 @@ signals:
 private:
     QString hostName;
     qint16 port;
+    QTcpSocket* socket;
     QQueue<QString> cmdQueue;
 
     QMutex mutex;
@@ -66,6 +68,7 @@ private:
     bool videoRunning;
     bool quit;
 
+    void startThread();
     void do_shortCmd(const QString &cmd);
     void do_getFrame(DISPLAY_MODE mode, int nFrame);
     void executeCmd(const QStringList &cmds);
