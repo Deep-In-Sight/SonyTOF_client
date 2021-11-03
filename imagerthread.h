@@ -39,6 +39,8 @@ public:
     void changeOffset(int offsetCm);
     void changeIntegrationTime(int timeus);
     void i2cReadWrite(bool read, int addr, int val = 0);
+    void reboot();
+    void checkStatus(int &status);
 
     void run();
 
@@ -69,7 +71,8 @@ private:
     bool quit;
 
     void startThread();
-    void do_shortCmd(const QString &cmd);
+    void stopThread();
+    void do_shortCmd(const QString &cmd, bool hasRet = true);
     void do_getFrame(DISPLAY_MODE mode, int nFrame);
     void executeCmd(const QStringList &cmds);
 };

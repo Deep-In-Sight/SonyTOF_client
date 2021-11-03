@@ -30,15 +30,7 @@ ImagerThread::ImagerThread(QObject *parent, QString hostName, qint16 port)
 
 ImagerThread::~ImagerThread()
 {
-    quit = true;
-    if (videoRunning) {
-        videoRunning = false;
-    }
-    mutex.lock();
-    cond_notified = true;
-    cond.wakeOne();
-    mutex.unlock();
-    wait();
+    stopThread();
 
     socket->disconnectFromHost();
     socket->close();
@@ -187,12 +179,43 @@ void ImagerThread::i2cReadWrite(bool read, int addr, int val) {
     executeCmd(cmds);
 }
 
+void ImagerThread::reboot() {
+    QString cmd("reboot\0");
+    QStringList cmds;
+    cmds.append(cmd);
+    executeCmd(cmds);
+}
+
+void ImagerThread::checkStatus(int &status) {
+    socket->write("checkStatus\0");
+    while (socket->bytesAvailable() < (int)sizeof(qint16)) {
+        if (!socket->waitForReadyRead(5000)) {
+            emit signalError(socket->error(), socket->errorString());
+            return;
+        }
+    }
+    status = *((qint16*)socket->readAll().data());
+//    status = *pVal;
+    qDebug() << "checkstatus return " << status;
+}
 
 void ImagerThread::startThread() {
     socket->disconnectFromHost();
     socket->close();
     delete socket;
     start();
+}
+
+void ImagerThread::stopThread() {
+    quit = true;
+    if (videoRunning) {
+        videoRunning = false;
+    }
+    mutex.lock();
+    cond_notified = true;
+    cond.wakeOne();
+    mutex.unlock();
+    wait();
 }
 
 //video thread
@@ -249,7 +272,7 @@ void ImagerThread::run()
     socket->close();
 }
 
-void ImagerThread::do_shortCmd(const QString &cmd)
+void ImagerThread::do_shortCmd(const QString &cmd, bool hasRet)
 {
 //    QTcpSocket socket;
     QByteArray buffer;
@@ -260,6 +283,8 @@ void ImagerThread::do_shortCmd(const QString &cmd)
     if (cmd == "getFrame") {
         qDebug() << "Not a short command";
         return;
+    } else if (cmd == "reboot") {
+        hasRet = false;
     }
 
 //    socket->connectToHost(hostName, port);
@@ -270,6 +295,9 @@ void ImagerThread::do_shortCmd(const QString &cmd)
 //    }
     socket->write(cmd.toStdString().c_str());
     socket->flush();
+
+    if (!hasRet)
+        return;
 
     while (socket->bytesAvailable() < (int)sizeof(qint16)) {
         if (!socket->waitForReadyRead(Timeout)) {

@@ -1,7 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QSplashScreen>
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QElapsedTimer>
@@ -9,6 +8,7 @@
 #include "imagerthread.h"
 #include "colorizerthread.h"
 #include "filterthread.h"
+#include "splashscreen.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,7 +20,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent, QString &host, int &port, QSplashScreen *splash);
+    MainWindow(QWidget *parent, QString &host, int &port, SplashScreen *splash);
     ~MainWindow();
 
 protected:
@@ -37,6 +37,8 @@ private slots:
     void on_lineEdit_intgtime_returnPressed();
     void on_pushButton_i2c_read_clicked();
     void on_pushButton_i2c_write_clicked();
+
+    void on_pushButton_reboot_clicked();
 
 public slots:
     void showError(int error, const QString &message);
@@ -55,6 +57,7 @@ private:
     void addColorBar();
 
     Ui::MainWindow *ui;
+    SplashScreen* splash;
     ImagerThread *imager;
     ColorizerThread *colorizer;
     FilterThread *filter;

@@ -22,9 +22,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-INCLUDEPATH += $$(OPENCV_SDK_DIR)/include
+OPENCV_SDK_DIR = D:/opencv
+INCLUDEPATH += $$OPENCV_SDK_DIR/include
 
-LIBS += -L$$(OPENCV_SDK_DIR)/x86/mingw/lib \
+LIBS += -L$$OPENCV_SDK_DIR/x86/mingw/lib \
         -lopencv_core320        \
         -lopencv_highgui320     \
         -lopencv_imgcodecs320   \
@@ -38,7 +39,8 @@ SOURCES += \
     imagerthread.cpp \
     filterthread.cpp \
     colorizerthread.cpp \
-    startupdialog.cpp
+    startupdialog.cpp \
+    splashscreen.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -47,7 +49,8 @@ HEADERS += \
     freqmod.h \
     filterthread.h \
     colorizerthread.h \
-    startupdialog.h
+    startupdialog.h \
+    splashscreen.h
 
 FORMS += \
         mainwindow.ui \

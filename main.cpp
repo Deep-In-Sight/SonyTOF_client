@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "startupdialog.h"
-
-#include <QSplashScreen>
+#include "splashscreen.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
@@ -10,7 +9,8 @@ int main(int argc, char *argv[])
     int port;
     QApplication a(argc, argv);
 
-    QSplashScreen splash(QPixmap("logo_small.png"));
+    SplashScreen splash(QPixmap("logo_small.png"));
+
     StartUpDialog* dialog;
     MainWindow *w;
 

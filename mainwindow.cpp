@@ -9,7 +9,6 @@
 #include <QFile>
 #include <QKeyEvent>
 
-
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
@@ -45,7 +44,7 @@ void MainWindow::addColorBar() {
     ui->label_maxDistance_3->setText(QString::asprintf("%.02f m", range));
 }
 
-MainWindow::MainWindow(QWidget *parent, QString &host, int &port, QSplashScreen *splash)
+MainWindow::MainWindow(QWidget *parent, QString &host, int &port, SplashScreen *splash)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
@@ -54,10 +53,11 @@ MainWindow::MainWindow(QWidget *parent, QString &host, int &port, QSplashScreen 
 
     this->host = host;
     this->port = port;
+    this->splash = splash;
 
-    connect(this, MainWindow::splashMessage, splash, QSplashScreen::showMessage);
+    connect(this, MainWindow::splashMessage, splash, SplashScreen::showStatusMessage);
     initializeUI();
-    disconnect(this, MainWindow::splashMessage, splash, QSplashScreen::showMessage);
+    disconnect(this, MainWindow::splashMessage, splash, SplashScreen::showStatusMessage);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -75,10 +75,18 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::initializeUI() {
 
-    int splashAlign = Qt::AlignBottom | Qt::AlignCenter;
-    QColor textColor = textColor;
+    int splashAlign = Qt::AlignTop | Qt::AlignCenter;
+    QColor textColor = Qt::black;
 
-    emit splashMessage("Initializing Camera", splashAlign, textColor);
+    const QPixmap pxm = splash->pixmap();
+    int rect_h = 150;
+    QRect textRect(0, pxm.height() - rect_h, pxm.width(), rect_h);
+
+    splash->setMessageRect(textRect);
+
+    qDebug() << splash->rect;
+
+    emit splashMessage("Initializing Camera. Connecting to server ...", splashAlign, textColor);
 
     colorizer = new ColorizerThread();
     filter = new FilterThread();
@@ -93,6 +101,13 @@ void MainWindow::initializeUI() {
     connect(imager, &ImagerThread::signalI2CReadVal, this, &MainWindow::showI2CReadValue);
     connect(imager, &ImagerThread::signalNewFrame, colorizer, &ColorizerThread::colorize);
     connect(colorizer, &ColorizerThread::signalImageDone, this, &MainWindow::imageShow);
+
+    int imagerStatus = -1;
+    imager->checkStatus(imagerStatus);
+    if (imagerStatus < 0) {
+        qDebug() << "imager not initialized\n";
+        return;
+    }
 
     emit splashMessage("Set display mode", splashAlign, textColor);
     DISPLAY_MODE mode = DISTANCE_MODE;
@@ -260,12 +275,16 @@ void MainWindow::on_pushButton_i2c_write_clicked()
     }
 }
 
+QString errorSS = "QLabel { background-color : red; border-radius: 10px; min-height: 20px; min-width: 20px;}";
+QString okaySS = "QLabel { background-color : green; border-radius: 10px; min-height: 20px; min-width: 20px;}";
 void MainWindow::showError(int error, const QString &message) {
     QString text = message + ", errorCode = " + QString::number(error);
+    ui->labelStatusIndicator->setStyleSheet(errorSS);
     ui->labelStatus->setText(text);
 }
 
 void MainWindow::showResponse(qint16 val, const QString &message) {
+    ui->labelStatusIndicator->setStyleSheet(okaySS);
     QString text = message + QString::number(val);
     ui->labelStatus->setText(text);
 }
@@ -285,6 +304,9 @@ void MainWindow::changeIntegration(bool up) {
     imager->changeIntegrationTime(timeus);
 }
 
-
-
-
+void MainWindow::on_pushButton_reboot_clicked()
+{
+    imager->reboot();
+    this->thread()->sleep(15);
+    on_pushButton_connect_clicked();
+}

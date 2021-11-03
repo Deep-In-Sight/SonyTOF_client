@@ -7,16 +7,16 @@
     <x>0</x>
     <y>0</y>
     <width>1054</width>
-    <height>872</height>
+    <height>857</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>IMX556 TOF Sensor Demo</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_7">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,15,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,15">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
@@ -77,6 +77,19 @@
             </property>
             <property name="placeholderText">
              <string>Port</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_reboot">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Reboot</string>
             </property>
            </widget>
           </item>
@@ -590,6 +603,23 @@
         </property>
        </spacer>
       </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QLabel" name="labelStatusIndicator">
+        <property name="maximumSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QLabel" name="labelStatus">
         <property name="minimumSize">
@@ -744,7 +774,7 @@
      <x>0</x>
      <y>0</y>
      <width>1054</width>
-     <height>21</height>
+     <height>17</height>
     </rect>
    </property>
   </widget>

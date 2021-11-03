@@ -51,16 +51,11 @@ void ColorizerThread::run() {
     QByteArray rawImage;
     DISPLAY_MODE displayMode;
     char* rawImageData;
+    QDateTime datetime;
 
     while (!quit) {
         mutex.lock();
-//        QByteArray rawImage = queueRawImage.dequeue();
-//        quint16 *rawImageData = (quint16*)rawImage.data();
-//        DISPLAY_MODE displayMode = (DISPLAY_MODE) queueDisplayMode.dequeue();
-//        qDebug() << "colorizing " << &rawImage << " " << displayMode;
-//        for (int i = 0; i < 10; i++) {
-//            qDebug() << rawImageData[i];
-//        }
+
         rawImage = pRawImage;
         displayMode = (DISPLAY_MODE)pDisplayMode;
         rawImageData = rawImage.data();
@@ -82,10 +77,14 @@ void ColorizerThread::run() {
             cv::applyColorMap(grayMat8b_inv, colorMat, cv::COLORMAP_JET);
             qImg = QImage(colorMat.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
         } else if (displayMode == DCS_MODE) {
-            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16SC1, rawImageData);
+            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
+            QString filename = QString("D:/DCS/DCS_")+QString::number(QDateTime::currentMSecsSinceEpoch())+".png";
+            qDebug() << filename;
+            cv::imwrite(filename.toStdString(), grayMat);
+
             grayMat = grayMat * 16; //convert 12bit signed integer to 16bit signed integer by shift right 4 bit
-            grayMat.convertTo(grayMat8b, CV_8SC1, 1/256.0);
-//            cv::imwrite("amplitude.jpg", grayMat8b);
+
+            grayMat.convertTo(grayMat8b, CV_8UC1, 1/256.0);
             qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
         } else {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
@@ -93,24 +92,6 @@ void ColorizerThread::run() {
 //            cv::imwrite("amplitude.jpg", grayMat8b);
             qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
         }
-
-//        qImg = QImage(imgSize, QImage::Format_RGB888);
-
-//        if (displayMode == DISTANCE_MODE) {
-//            for(int i = 0 ; i < qImg.height(); i ++){
-//                for(int j = 0 ; j < qImg.width(); j++){
-//                    uint16_t gray = rawImageData[i*qImg.width()+j] / 256;
-//                    qImg.setPixelColor(j,i, colorVec[gray]);
-//                }
-//            }
-//        } else {
-//            for(int i = 0 ; i < qImg.height(); i ++){
-//                for(int j = 0 ; j < qImg.width(); j++){
-//                    uint16_t gray = rawImageData[i*qImg.width()+j] / 256;
-//                    qImg.setPixel(j,i, qRgb(gray, gray, gray));
-//                }
-//            }
-//        }
 
         __TOC__(COLORIZE);
 //        qDebug() << "colorizing done" ;
