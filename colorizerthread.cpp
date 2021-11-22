@@ -87,10 +87,10 @@ void ColorizerThread::run() {
             grayMat.convertTo(grayMat8b, CV_8UC1, 1/256.0);
             qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
         } else {
-            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
-            grayMat.convertTo(grayMat8b, CV_8UC1);
+            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_8UC1, rawImageData);
+//            grayMat.convertTo(grayMat8b, CV_8UC1);
 //            cv::imwrite("amplitude.jpg", grayMat8b);
-            qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
+            qImg = QImage(grayMat.data, grayMat.cols, grayMat.rows, grayMat.step, QImage::Format_Grayscale8);
         }
 
         __TOC__(COLORIZE);

@@ -335,10 +335,11 @@ void ImagerThread::do_getFrame(DISPLAY_MODE mode, int nFrame) {
 
     if (mode == DCS_MODE) {
         frameSize = IMG_W * IMG_H * 2 * 4;
-    } else {
+    } else if (mode == DISTANCE_MODE) {
         frameSize = IMG_W * IMG_H * 2;
+    } else {
+        frameSize = IMG_W * IMG_H;
     }
-
 //    socket->connectToHost(hostName, port);
 //    if(!socket->waitForConnected(Timeout))
 //    {
