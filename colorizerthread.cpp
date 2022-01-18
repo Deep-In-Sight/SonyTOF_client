@@ -78,9 +78,15 @@ void ColorizerThread::run() {
             qImg = QImage(colorMat.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
         } else if (displayMode == DCS_MODE) {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
-            QString filename = QString("D:/DCS/DCS_")+QString::number(QDateTime::currentMSecsSinceEpoch())+".png";
-            qDebug() << filename;
-            cv::imwrite(filename.toStdString(), grayMat);
+            if (_save_en) {
+                QString filename = QString("D:/DCS/DCS_frame_")+QString::number(QDateTime::currentMSecsSinceEpoch())+".bin";
+                QFile frameFile(filename);
+                if (!frameFile.open(QIODevice::WriteOnly)){
+                    qDebug() << "Cannot open " << filename << " to save DCS frame\r\n";
+                }
+                frameFile.write(rawImage);
+                frameFile.close();
+            }
 
             grayMat = grayMat * 16; //convert 12bit signed integer to 16bit signed integer by shift right 4 bit
 
@@ -106,6 +112,10 @@ void ColorizerThread::run() {
 //        qDebug() << "awoken, queue has: " << queueRawImage.count();
         mutex.unlock();
     }
+}
+
+void ColorizerThread::enable_save(bool save_en) {
+    _save_en = save_en;
 }
 
 void colorMap(int val, int& r, int& g, int& b) {

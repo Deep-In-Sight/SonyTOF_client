@@ -22,6 +22,7 @@ public:
 
     QColor& getColorJet(quint16 gray);
     void run();
+    void enable_save(bool save_en);
 
 public slots:
     void colorize(QByteArray rawImage, int mode);
@@ -39,6 +40,8 @@ private:
     QMutex mutex;
     QWaitCondition cond;
     bool cond_notified;
+
+    bool _save_en;
 
     QColor* colorVec;
     void colorVecInit();

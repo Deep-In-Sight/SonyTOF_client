@@ -310,3 +310,8 @@ void MainWindow::on_pushButton_reboot_clicked()
     this->thread()->sleep(15);
     on_pushButton_connect_clicked();
 }
+
+void MainWindow::on_checkBox_saveRaw_clicked()
+{
+    colorizer->enable_save(ui->checkBox_saveRaw->isChecked());
+}

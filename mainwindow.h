@@ -40,6 +40,8 @@ private slots:
 
     void on_pushButton_reboot_clicked();
 
+    void on_checkBox_saveRaw_clicked();
+
 public slots:
     void showError(int error, const QString &message);
     void showResponse(qint16 val, const QString &message);
