@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>data/fmodData.txt</file>
+        <file>images/logo_small.png</file>
+    </qresource>
+</RCC>

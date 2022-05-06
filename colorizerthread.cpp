@@ -3,9 +3,9 @@
 #include "colorizerthread.h"
 #include "profile.h"
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 ColorizerThread::ColorizerThread(QObject *parent)
     :QThread(parent), quit(false), cond_notified(false)

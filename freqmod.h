@@ -118,7 +118,7 @@ private:
 
         modSettings = new freqmod[numSettings];
 
-        QFile fmodData("fmodData.txt");
+        QFile fmodData(":/data/fmodData.txt");
         if (!fmodData.open(QIODevice::ReadOnly | QIODevice::Text)) {
             qDebug() << "Cannot open fmod datasheet" << fmodData.errorString();
             exit(-1);

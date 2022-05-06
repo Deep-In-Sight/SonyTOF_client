@@ -1,4 +1,5 @@
 #include "splashscreen.h"
+#include <QThread>
 
 SplashScreen::SplashScreen(const QPixmap &pixmap) : QSplashScreen(pixmap) {}
 SplashScreen::~SplashScreen(){}
@@ -18,4 +19,5 @@ void SplashScreen::showStatusMessage(const QString &message, int align, const QC
     this->color = color;
     this->alignement = align;
     this->showMessage(this->message, this->alignement, this->color);
+    QThread::msleep(100);
 }

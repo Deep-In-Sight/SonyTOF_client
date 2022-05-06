@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     int port;
     QApplication a(argc, argv);
 
-    SplashScreen splash(QPixmap("logo_small.png"));
+    SplashScreen splash(QPixmap(":/images/logo_small.png"));
 
     StartUpDialog* dialog;
     MainWindow *w;

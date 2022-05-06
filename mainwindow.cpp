@@ -55,9 +55,9 @@ MainWindow::MainWindow(QWidget *parent, QString &host, int &port, SplashScreen *
     this->port = port;
     this->splash = splash;
 
-    connect(this, MainWindow::splashMessage, splash, SplashScreen::showStatusMessage);
+    connect(this, &MainWindow::splashMessage, splash, &SplashScreen::showStatusMessage);
     initializeUI();
-    disconnect(this, MainWindow::splashMessage, splash, SplashScreen::showStatusMessage);
+    disconnect(this, &MainWindow::splashMessage, splash, &SplashScreen::showStatusMessage);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
