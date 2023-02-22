@@ -36,12 +36,14 @@ LIBS += -L$$OPENCV_SDK_DIR/x86/mingw/lib \
 }
 
 unix {
-LIBS += -lopencv_core        \
-        -lopencv_highgui     \
-        -lopencv_imgcodecs   \
-        -lopencv_imgproc     \
-        -lopencv_features2d  \
-        -lopencv_calib3d
+#LIBS += -lopencv_core        \
+#        -lopencv_highgui     \
+#        -lopencv_imgcodecs   \
+#        -lopencv_imgproc     \
+#        -lopencv_features2d  \
+#        -lopencv_calib3d
+CONFIG += link_pkgconfig
+PKGCONFIG += opencv4
 }
 
 SOURCES += \

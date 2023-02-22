@@ -15,11 +15,11 @@
 
 #define INT_STEP 100
 
-void MainWindow::addColorBar() {
+void MainWindow::addColorBar(int colormap) {
     static bool first = true;
 
     if (first) {
-        first = false;
+        //first = false;
         int W = 25, H = 660;
         cv::Mat grayBar(H, W, CV_8UC1);
         cv::Mat grayBarInv, colorBar;
@@ -28,8 +28,9 @@ void MainWindow::addColorBar() {
                 grayBar.at<uchar>(y, x) = (uchar) (y*256/H);
             }
         }
-        cv::bitwise_not(grayBar, grayBarInv);
-        cv::applyColorMap(grayBarInv, colorBar, cv::COLORMAP_JET);
+//        cv::bitwise_not(grayBar, grayBarInv);
+        cv::applyColorMap(grayBar, colorBar, colormap);
+	cv::cvtColor(colorBar, colorBar, cv::COLOR_BGR2RGB);
         QImage qImg = QImage(colorBar.data, colorBar.cols, colorBar.rows, colorBar.step, QImage::Format_RGB888);
         QPixmap pixmap = QPixmap::fromImage(qImg);
         QGraphicsScene* barScene = new QGraphicsScene;
@@ -43,6 +44,7 @@ void MainWindow::addColorBar() {
     ui->label_minDistance_3->setText(QString::asprintf("%.02f m", 0.0));
     ui->label_maxDistance_3->setText(QString::asprintf("%.02f m", range));
 }
+
 
 MainWindow::MainWindow(QWidget *parent, QString &host, int &port, SplashScreen *splash)
     : QMainWindow(parent)
@@ -136,7 +138,12 @@ void MainWindow::initializeUI() {
     ui->lineEdit_i2c_addr->setText("");
     ui->lineEdit_i2c_val->setText("");
 
-    addColorBar();
+    emit splashMessage("Set threshold", splashAlign, textColor);
+    int threshold = 0;
+    ui->hslider_threshold->setValue(threshold);
+    ui->lineEdit_threshold->setText(QString::number(threshold));
+
+    addColorBar(ui->comboBox_colormap->currentIndex());
 
     emit splashMessage("Camera configured, starting UI", splashAlign, Qt::white);
 }
@@ -229,7 +236,7 @@ void MainWindow::on_lineEdit_fmod_returnPressed()
     int freq = ui->lineEdit_fmod->text().toInt(&okay, 10);
     if (okay && freq >=4 && freq <= 100) {
         imager->changeFmod(freq);
-        addColorBar();
+        addColorBar(ui->comboBox_colormap->currentIndex());
     } else {
         showError(-1, "Invalid freqency value ");
     }
@@ -315,3 +322,37 @@ void MainWindow::on_checkBox_saveRaw_clicked()
 {
     colorizer->enable_save(ui->checkBox_saveRaw->isChecked());
 }
+
+void MainWindow::on_lineEdit_threshold_returnPressed()
+{
+    qDebug() << "threshold entered";
+    int thres = ui->lineEdit_threshold->text().toInt();
+    ui->hslider_threshold->setValue(thres);
+    imager->changeAmpitudeThreshold(thres);
+}
+
+
+void MainWindow::on_hslider_threshold_valueChanged(int value)
+{
+    qDebug() << "slider new value";
+    ui->lineEdit_threshold->setText(QString::number(value));
+//    imager->changeAmpitudeThreshold(value);
+}
+
+
+void MainWindow::on_hslider_threshold_sliderReleased()
+{
+    qDebug() << "slider released";
+    int thres = ui->hslider_threshold->value();
+    imager->changeAmpitudeThreshold(thres);
+}
+
+
+
+void MainWindow::on_comboBox_colormap_currentIndexChanged(int index)
+{
+    qDebug() << "colormap changed" ;
+    addColorBar(index);
+    colorizer->changeColormap(index);
+}
+

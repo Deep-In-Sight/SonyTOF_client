@@ -38,6 +38,7 @@ public:
     void changeFmod(int freq);
     void changeOffset(int offsetCm);
     void changeIntegrationTime(int timeus);
+    void changeAmpitudeThreshold(int threshold);
     void i2cReadWrite(bool read, int addr, int val = 0);
     void reboot();
     void checkStatus(int &status);

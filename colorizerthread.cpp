@@ -47,7 +47,7 @@ void ColorizerThread::colorize(QByteArray rawImage, int mode) {
 void ColorizerThread::run() {
     QImage qImg;
     QSize imgSize;
-    cv::Mat grayMat, grayMat8b, grayMat8b_inv, colorMat;
+    cv::Mat grayMat, grayMat8b, grayMat8b_inv, colorMat, colorMatMasked;
     QByteArray rawImage;
     DISPLAY_MODE displayMode;
     char* rawImageData;
@@ -72,10 +72,14 @@ void ColorizerThread::run() {
 
         if (displayMode == DISTANCE_MODE) {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
-            grayMat.convertTo(grayMat8b, CV_8UC1, 1/256.0);
-            cv::bitwise_not(grayMat8b, grayMat8b_inv);
-            cv::applyColorMap(grayMat8b_inv, colorMat, cv::COLORMAP_JET);
-            qImg = QImage(colorMat.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
+            cv::Mat mask = (grayMat != cv::Scalar(0xFFFF));
+            cv::cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
+            grayMat.convertTo(grayMat8b, CV_8UC1, 1/128.0);
+//            cv::bitwise_not(grayMat8b, grayMat8b_inv);
+            cv::applyColorMap(grayMat8b, colorMat, _colormap);
+            cv::bitwise_and(colorMat, mask, colorMatMasked);
+            cv::cvtColor(colorMatMasked, colorMatMasked, cv::COLOR_BGR2RGB);
+            qImg = QImage(colorMatMasked.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
         } else if (displayMode == DCS_MODE) {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
             if (_save_en) {
@@ -116,6 +120,10 @@ void ColorizerThread::run() {
 
 void ColorizerThread::enable_save(bool save_en) {
     _save_en = save_en;
+}
+
+void ColorizerThread::changeColormap(int colormap) {
+    _colormap = colormap;
 }
 
 void colorMap(int val, int& r, int& g, int& b) {

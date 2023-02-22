@@ -42,6 +42,14 @@ private slots:
 
     void on_checkBox_saveRaw_clicked();
 
+    void on_lineEdit_threshold_returnPressed();
+
+    void on_hslider_threshold_valueChanged(int value);
+
+    void on_hslider_threshold_sliderReleased();
+
+    void on_comboBox_colormap_currentIndexChanged(int index);
+
 public slots:
     void showError(int error, const QString &message);
     void showResponse(qint16 val, const QString &message);
@@ -56,7 +64,7 @@ private:
     void changeIntegration(bool up);
     void fps_update();
 
-    void addColorBar();
+    void addColorBar(int colormap);
 
     Ui::MainWindow *ui;
     SplashScreen* splash;

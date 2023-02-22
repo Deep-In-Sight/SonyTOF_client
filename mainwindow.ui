@@ -45,7 +45,7 @@
              </size>
             </property>
             <property name="text">
-             <string>192.168.7.2</string>
+             <string>10.0.0.1</string>
             </property>
             <property name="placeholderText">
              <string>IP</string>
@@ -592,6 +592,192 @@
              <string>Write</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_threshold">
+            <property name="text">
+             <string>Threshold</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="hslider_threshold">
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_threshold">
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_colormap">
+            <property name="text">
+             <string>ColorMap</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBox_colormap">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>250</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+            </property>
+            <property name="minimumContentsLength">
+             <number>0</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>COLORMAP_AUTUMN</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_BONE</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_JET</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_WINTER</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_RAINBOW</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_OCEAN</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_SUMMER</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_SPRING</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_COOL</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_HSV</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_PINK</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_HOT</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_PARULA</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_MAGMA</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_INFERNO</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_PLASMA</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_VIRIDIS</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_CIVIDIS</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_TWILIGHT</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_TWILIGHT_SHIFTED</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_TURBO</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>COLORMAP_DEEPGREEN</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>

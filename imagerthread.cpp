@@ -133,7 +133,7 @@ void ImagerThread::changeFmod(int freq) {
 
 void ImagerThread::changeOffset(int offsetCm) {
     double range = 300.0/(2*modFreq);
-    phaseOffset = (quint16) (offsetCm/100.0 /range * 65535);
+    phaseOffset = (quint16) (offsetCm/100.0 /range * 32767);
 
     qDebug() << "Offset = " << phaseOffset;
 
@@ -161,6 +161,13 @@ void ImagerThread::changeIntegrationTime(int timeus){
     }
 
     QString cmd = QString("changeIntegration %1\0").arg(timeus*1000);
+    cmds.append(cmd);
+    executeCmd(cmds);
+}
+
+void ImagerThread::changeAmpitudeThreshold(int threshold) {
+    QString cmd = QString("setAmplitudeThreshold %1\0").arg(threshold);
+    QStringList cmds;
     cmds.append(cmd);
     executeCmd(cmds);
 }
