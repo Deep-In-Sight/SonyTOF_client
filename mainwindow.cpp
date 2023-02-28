@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QFile>
 #include <QKeyEvent>
+#include <QFileDialog>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -101,7 +102,8 @@ void MainWindow::initializeUI() {
     connect(imager, &ImagerThread::signalError, this, &MainWindow::showError);
     connect(imager, &ImagerThread::signalNewResponse, this, &MainWindow::showResponse);
     connect(imager, &ImagerThread::signalI2CReadVal, this, &MainWindow::showI2CReadValue);
-    connect(imager, &ImagerThread::signalNewFrame, colorizer, &ColorizerThread::colorize);
+    connect(imager, &ImagerThread::signalNewFrame, filter, &FilterThread::slotFilter);
+    connect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
     connect(colorizer, &ColorizerThread::signalImageDone, this, &MainWindow::imageShow);
 
     int imagerStatus = -1;
@@ -122,8 +124,7 @@ void MainWindow::initializeUI() {
     imager->changeFmod(freq);
 
     emit splashMessage("Set filter mode", splashAlign, textColor);
-    ui->checkbox_MedianEnable->setChecked(false);
-    imager->enableMedianFilter(false);
+    this->on_pushButton_resetFilters_clicked();
 
     emit splashMessage("Set distance static offset", splashAlign, textColor);
     int offsetCm = 0;
@@ -215,21 +216,6 @@ void MainWindow::on_pushButton_picture_clicked()
     imager->getFrame();
 }
 
-void MainWindow::on_checkbox_MedianEnable_stateChanged(int arg1)
-{
-    bool enable = !!arg1;
-    imager->enableMedianFilter(enable);
-    if (enable) {
-        disconnect(imager, &ImagerThread::signalNewFrame, colorizer, &ColorizerThread::colorize);
-        connect(imager, &ImagerThread::signalNewFrame, filter, &FilterThread::filter);
-        connect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
-    } else {
-        disconnect(imager, &ImagerThread::signalNewFrame, filter, &FilterThread::filter);
-        disconnect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
-        connect(imager, &ImagerThread::signalNewFrame, colorizer, &ColorizerThread::colorize);
-    }
-}
-
 void MainWindow::on_lineEdit_fmod_returnPressed()
 {
     bool okay;
@@ -318,11 +304,6 @@ void MainWindow::on_pushButton_reboot_clicked()
     on_pushButton_connect_clicked();
 }
 
-void MainWindow::on_checkBox_saveRaw_clicked()
-{
-    colorizer->enable_save(ui->checkBox_saveRaw->isChecked());
-}
-
 void MainWindow::on_lineEdit_threshold_returnPressed()
 {
     qDebug() << "threshold entered";
@@ -354,5 +335,112 @@ void MainWindow::on_comboBox_colormap_currentIndexChanged(int index)
     qDebug() << "colormap changed" ;
     addColorBar(index);
     colorizer->changeColormap(index);
+}
+
+void MainWindow::on_checkBox_medianBlur_toggled(bool checked)
+{
+    filter->toggleFilter(FILTER_MEDIAN, checked);
+}
+
+void MainWindow::on_checkBox_gaussianBlur_toggled(bool checked)
+{
+    filter->toggleFilter(FILTER_GAUSSIAN, checked);
+}
+
+
+void MainWindow::on_checkBox_guidedFilter_toggled(bool checked)
+{
+    filter->toggleFilter(FILTER_GUIDED, checked);
+}
+
+void MainWindow::on_spinBox_median_ksize_valueChanged(int arg1)
+{
+    int ksize = arg1;
+    filter->updateMedian(ksize);
+}
+
+
+void MainWindow::on_spinBox_gaussian_ksize_valueChanged(int arg1)
+{
+    int ksize = arg1;
+    double sigma = ui->doubleSpinBox_gaussian_sigma->value();
+    filter->updateGaussian(ksize, sigma);
+}
+
+
+void MainWindow::on_doubleSpinBox_gaussian_sigma_valueChanged(double arg1)
+{
+    int ksize = ui->spinBox_gaussian_ksize->value();
+    double sigma = arg1;
+    filter->updateGaussian(ksize, sigma);
+}
+
+
+void MainWindow::on_spinBox_guided_r_valueChanged(int arg1)
+{
+    int radius = arg1;
+    double epsilon = ui->doubleSpinBox_guided_eps->value();
+    filter->updateGuided(radius, epsilon);
+}
+
+
+void MainWindow::on_doubleSpinBox_guided_eps_valueChanged(double arg1)
+{
+    int radius = ui->spinBox_guided_r->value();
+    double epsilon = arg1;
+    filter->updateGuided(radius, epsilon);
+}
+
+void MainWindow::on_pushButton_resetFilters_clicked()
+{
+    bool medianEn = false;
+    int medianKsize = 3;
+    bool gaussianEn = false;
+    int gaussianKsize = 3;
+    double gaussianSigma = 0.5;
+    bool guidedEn = false;
+    int guidedRadius = 2;
+    double guidedEpsilon = 0.1;
+
+    ui->checkBox_medianBlur->setChecked(medianEn);
+    ui->spinBox_median_ksize->setValue(medianKsize);
+    ui->checkBox_gaussianBlur->setChecked(gaussianEn);
+    ui->spinBox_gaussian_ksize->setValue(gaussianKsize);
+    ui->doubleSpinBox_gaussian_sigma->setValue(gaussianSigma);
+    ui->checkBox_guidedFilter->setChecked(guidedEn);
+    ui->spinBox_guided_r->setValue(guidedRadius);
+    ui->doubleSpinBox_guided_eps->setValue(guidedEpsilon);
+
+    filter->updateMedian(medianKsize);
+    filter->updateGaussian(gaussianKsize, gaussianSigma);
+    filter->updateGuided(guidedRadius, guidedEpsilon);
+}
+
+
+void MainWindow::on_checkBox_saveRaw_stateChanged(int arg1)
+{
+    bool save = (arg1 == Qt::Checked);
+
+    if (save) {
+        QString path = QFileDialog::getExistingDirectory(this, tr("Select save directory"),
+                                                         tr(""),
+                                                         QFileDialog::ShowDirsOnly
+                                                         | QFileDialog::DontResolveSymlinks);
+        if (path.isEmpty()) {
+            path = QString("null");
+            save = false;
+        }
+        ui->lineEdit_savePath->setText(path);
+        colorizer->enable_save(save, path);
+    } else {
+        QString path = ui->lineEdit_savePath->text();
+        colorizer->enable_save(save, path);
+    }
+}
+
+
+void MainWindow::on_checkBox_hybridmedian_toggled(bool checked)
+{
+    filter->toggleFilter(FILTER_HYBRIDMEDIAN, checked);
 }
 

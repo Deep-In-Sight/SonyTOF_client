@@ -31,7 +31,6 @@ private slots:
     void on_comboBox_displayMode_currentIndexChanged(int index);
     void on_pushButton_Video_clicked();
     void on_pushButton_picture_clicked();
-    void on_checkbox_MedianEnable_stateChanged(int arg1);
     void on_lineEdit_fmod_returnPressed();
     void on_lineEdit_offset_returnPressed();
     void on_lineEdit_intgtime_returnPressed();
@@ -40,8 +39,6 @@ private slots:
 
     void on_pushButton_reboot_clicked();
 
-    void on_checkBox_saveRaw_clicked();
-
     void on_lineEdit_threshold_returnPressed();
 
     void on_hslider_threshold_valueChanged(int value);
@@ -49,6 +46,29 @@ private slots:
     void on_hslider_threshold_sliderReleased();
 
     void on_comboBox_colormap_currentIndexChanged(int index);
+
+    void on_checkBox_medianBlur_toggled(bool checked);
+
+    void on_checkBox_gaussianBlur_toggled(bool checked);
+
+    void on_checkBox_guidedFilter_toggled(bool checked);
+
+    void on_spinBox_median_ksize_valueChanged(int arg1);
+
+    void on_spinBox_gaussian_ksize_valueChanged(int arg1);
+
+    void on_doubleSpinBox_gaussian_sigma_valueChanged(double arg1);
+
+    void on_spinBox_guided_r_valueChanged(int arg1);
+
+    void on_doubleSpinBox_guided_eps_valueChanged(double arg1);
+
+    void on_pushButton_resetFilters_clicked();
+
+
+    void on_checkBox_saveRaw_stateChanged(int arg1);
+
+    void on_checkBox_hybridmedian_toggled(bool checked);
 
 public slots:
     void showError(int error, const QString &message);

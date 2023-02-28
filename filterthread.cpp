@@ -4,10 +4,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-#define MAX_FILTER 10
-#define NUMPIX (640*480)
-uint16_t filter_tmp[MAX_FILTER][NUMPIX];
+#include <opencv2/ximgproc.hpp>
 
 FilterThread::FilterThread(QObject* parent)
     :QThread(parent), quit(false), cond_notified(false)
@@ -23,11 +20,8 @@ FilterThread::~FilterThread() {
     wait();
 }
 
-void FilterThread::filter(const QByteArray rawImage, int mode) {
-//    qDebug() << "new frame comming " << &rawImage;
+void FilterThread::slotFilter(const QByteArray rawImage, int mode) {
     QMutexLocker locker(&mutex);
-//    queueRawImage.enqueue(rawImage);
-//    queueImageMode.enqueue(mode);
     pRawImage = rawImage;
     pDisplayMode = mode;
 
@@ -42,15 +36,16 @@ void FilterThread::filter(const QByteArray rawImage, int mode) {
 void FilterThread::run() {
     QByteArray filteredRaw;
     QSize imgSize;
-    cv::Mat grayMat, grayBlurMat;
+    int dataType;
+    cv::Mat src, dst;
+    std::list< FILTER_TYPE> filters;
+
     QByteArray rawImage;
     DISPLAY_MODE displayMode;
 
     while (!quit) {
         mutex.lock();
-//        qDebug() << "FIlter queue: " << queueRawImage.count();
-//        QByteArray rawImage = queueRawImage.dequeue();
-//        DISPLAY_MODE displayMode = (DISPLAY_MODE) queueImageMode.dequeue();
+        filters = m_filters;
         rawImage = pRawImage;
         displayMode = (DISPLAY_MODE) pDisplayMode;
         mutex.unlock();
@@ -61,80 +56,144 @@ void FilterThread::run() {
             imgSize = QSize(640, 480);
         }
 
-        __TIC__(MEDIAN_FILTER);
-//        do_medianFilter(rawImage, filteredRaw, imgSize, 2);
-        grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImage.data());
-        cv::medianBlur(grayMat, grayBlurMat, 3);
-        filteredRaw = QByteArray::fromRawData((char*)grayBlurMat.data, grayBlurMat.rows*grayBlurMat.step);
-        __TOC__(MEDIAN_FILTER);
+        if (displayMode == AMPLITUDE_MODE_CLAMP ||
+                displayMode == AMPLITUDE_MODE_SCALE) {
+            dataType = CV_8UC1;
+        } else {
+            dataType = CV_16SC1;
+        }
 
-//        qDebug() << "colorizing done" ;
+        __TIC__(ALL_FILTERS);
+        src = cv::Mat(imgSize.height(), imgSize.width(), dataType, rawImage.data());
+        if (displayMode == DISTANCE_MODE) {
+            for (auto type: filters) {
+                doFilter(src, dst, type);
+                src = dst;
+            }
+        }
+        __TOC__(ALL_FILTERS);
+
+        filteredRaw = QByteArray::fromRawData((char*)src.data, src.rows*src.step);
+
         emit signalFilterDone(filteredRaw, displayMode);
 
         mutex.lock();
         while (!cond_notified) {
-//            qDebug() << "gonna sleep";
             cond.wait(&mutex);
         }
         cond_notified = false;
-//        qDebug() << "awoken, queue has: " << queueRawImage.count();
         mutex.unlock();
     }
 }
 
-void FilterThread::insertionSort(uint16_t* arr, int n)
-{
-    int i, key, j;
-    for (i = 1; i < n; i++)
-    {
-        key = arr[i];
-        j = i - 1;
-
-        /* Move elements of arr[0..i-1], that are
-        greater than key, to one position ahead
-        of their current position */
-        while (j >= 0 && arr[j] > key)
-        {
-            arr[j + 1] = arr[j];
-            j = j - 1;
-        }
-        arr[j + 1] = key;
-    }
-}
-
-void FilterThread::do_medianFilter(QByteArray &rawImg, QByteArray &rawFiltered, QSize &size, int nLoop) {
-    uint16_t window[9];
-    uint16_t* pInput = NULL;
-    uint16_t* pOutput = NULL;
-    int H = size.height();
-    int W = size.width();
-
-    for (int i = 0; i < nLoop; i++) {
-        for (int y = 0; y < H; y++) {
-            for (int x = 0; x < W; x++) {
-                int pos = y*W+x;
-                pOutput = filter_tmp[i];
-                if (i == 0)
-                    pInput = (uint16_t*) rawImg.data();
-                else
-                    pInput = filter_tmp[i-1];
-
-                if (x == 0 || y == 0 || x == W-1 || y == H-1) {
-                    pOutput[pos] = pInput[pos];
-                } else {
-                    for (int ky = 0; ky < 3; ky++){
-                        for (int kx = 0; kx < 3; kx++) {
-                             int wpos = ky*3 + kx;
-                             window[wpos] = pInput[(y+ky-1)*W+x+kx-1];
-                        }
-                    }
-                    insertionSort(window,9);
-                    pOutput[pos] = window[4];
-                }
+void FilterThread::toggleFilter(FILTER_TYPE type, bool enable) {
+    mutex.lock();
+    if (enable) {
+        m_filters.push_back(type);
+    } else {
+        for (auto it = m_filters.begin(); it != m_filters.end(); it++) {
+            if (*it == type) {
+                it = m_filters.erase(it);
             }
         }
     }
 
-    rawFiltered = QByteArray((char*)pOutput, H*W*sizeof(uint16_t));
+    auto dbg = qDebug();
+    for (auto it = m_filters.begin(); it != m_filters.end(); it++) {
+        dbg << *it << " ";
+    }
+    dbg << Qt::endl;
+    mutex.unlock();
+
+    return;
 }
 
+void FilterThread::doFilter(cv::Mat& src, cv::Mat& dst, FILTER_TYPE type) {
+    cv::Mat mask;
+    switch (type) {
+    case FILTER_NONE:
+        dst = src;
+        break;
+    case FILTER_MEDIAN:
+        cv::medianBlur(src, dst, m_medianSize);
+        break;
+    case FILTER_GAUSSIAN:
+        cv::GaussianBlur(src, dst, cv::Size(m_gaussianSize, m_gaussianSize),
+                         m_gaussianSigma);
+        break;
+    case FILTER_GUIDED:
+        src = cv::Mat(src.rows, src.cols, CV_16SC1, src.data);
+        src.convertTo(src, CV_32FC1, 1.0/32767);
+        mask = (src < 0);
+        mask.convertTo(mask, CV_32FC1, -1.0/255);
+        src = src + mask;
+        cv::ximgproc::guidedFilter(src, src, dst, m_guidedRadius, m_guidedEpsilon);
+//        dst = dst - mask;
+
+        dst.convertTo(dst, CV_16SC1, 32767);
+        qDebug() << src.type() << " " <<  dst.type();
+        break;
+    case FILTER_HYBRIDMEDIAN:
+//        dst = src;
+        hybridMedianFilter(src, dst, m_medianSize);
+        break;
+    default:
+        dst = src;
+        qDebug() << "Filter not found";
+        break;
+    }
+}
+
+void FilterThread::updateMedian(int& ksize) {
+    m_medianSize = ksize;
+
+    qDebug() << "median config: ksize=" << m_medianSize;
+}
+
+void FilterThread::updateGaussian(int& ksize, double& sigma) {
+    m_gaussianSize = ksize;
+    m_gaussianSigma = sigma;
+
+    qDebug() << "gaussian config: ksize=" << m_gaussianSize << " sigma=" << sigma;
+}
+
+void FilterThread::updateGuided(int& radius, double& epsilon) {
+    m_guidedRadius = radius;
+    m_guidedEpsilon = epsilon;
+
+    qDebug() << "guided filter config: radius=" << m_guidedRadius << " epsilon=" << epsilon;
+}
+
+short median(std::vector<short>& v) {
+    int n = v.size()/2;
+    std::nth_element(v.begin(), v.begin()+n, v.end());
+    return v[n];
+}
+
+void hybridMedianFilter(cv::Mat& src, cv::Mat& dst, int& ksize) {
+    Q_ASSERT(ksize%2 == 1);
+    int pad = ksize/2;
+    dst = cv::Mat(src.rows, src.cols, src.type());
+    cv::copyMakeBorder(src, src, pad, pad, pad, pad, cv::BORDER_REFLECT101);
+    std::vector<short> cross1(ksize*2-1);
+    std::vector<short> cross2(ksize*2-1);
+    std::vector<short> med(3);
+    for (int y = 0; y < dst.rows; y++) {
+        for (int x = 0; x < dst.cols; x++) {
+            for (int k = 0; k < ksize; k++) {
+                cross1[k] = src.at<short>(y+k, x+k);
+                cross2[k] = src.at<short>(y+k, x+ksize/2);
+            }
+            for (int k = 0; k < ksize; k++) {
+                if (k == ksize/2)
+                    continue;
+                cross1[ksize+k] = src.at<short>(y+k, x+ksize-1 - k);
+                cross2[ksize+k] = src.at<short>(y+ksize/2, x+k);
+            }
+            med[0] = median(cross1);
+            med[1] = median(cross2);
+            med[2] = src.at<short>(y+ksize/2, x+ksize/2);
+            dst.at<short>(y, x) = median(med);
+        }
+    }
+}

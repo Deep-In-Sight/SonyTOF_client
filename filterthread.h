@@ -8,8 +8,16 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QQueue>
+#include <opencv2/core.hpp>
 
-#include "filterthread.h"
+enum FILTER_TYPE {
+    FILTER_NONE = 0,
+    FILTER_MEDIAN,
+    FILTER_GAUSSIAN,
+    FILTER_GUIDED,
+    FILTER_HYBRIDMEDIAN,
+};
+
 
 class FilterThread : public QThread
 {
@@ -21,25 +29,40 @@ public:
 
     void run();
 
+    void updateMedian(int& ksize);
+    void updateGaussian(int& ksize, double& sigma);
+    void updateGuided(int& radius, double& epsilon);
+
+    void toggleFilter(FILTER_TYPE type, bool enable);
+
 public slots:
-    void filter(QByteArray rawImage, int mode);
+    void slotFilter(QByteArray rawImage, int mode);
 
 signals:
     void signalFilterDone(QByteArray filteredRawImage, int mode);
 
 private:
     bool quit;
-//    QQueue<QByteArray> queueRawImage;
-//    QQueue<int> queueImageMode;
     QByteArray pRawImage;
     int pDisplayMode;
+
+    std::list<FILTER_TYPE> m_filters;
+
+    //median filter configs
+    int m_medianSize;
+    //gaussian filter configs
+    int m_gaussianSize;
+    double m_gaussianSigma;
+    //guided filter configs
+    int m_guidedRadius;
+    double m_guidedEpsilon;
 
     QMutex mutex;
     QWaitCondition cond;
     bool cond_notified;
 
-    void insertionSort(uint16_t* arr, int n);
-    void do_medianFilter(QByteArray &rawImg, QByteArray &rawFiltered, QSize &size, int nLoop);
+    void doFilter(cv::Mat& src, cv::Mat& dst, FILTER_TYPE type);
 };
 
+void hybridMedianFilter(cv::Mat& src, cv::Mat& dst, int& ksize);
 #endif // FILTERTHREAD_H

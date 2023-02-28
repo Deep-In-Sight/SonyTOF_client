@@ -52,6 +52,7 @@ SOURCES += \
     imagerthread.cpp \
     filterthread.cpp \
     colorizerthread.cpp \
+    spinbox.cpp \
     startupdialog.cpp \
     splashscreen.cpp
 
@@ -62,6 +63,7 @@ HEADERS += \
     freqmod.h \
     filterthread.h \
     colorizerthread.h \
+    spinbox.h \
     startupdialog.h \
     splashscreen.h
 

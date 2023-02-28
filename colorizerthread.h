@@ -8,8 +8,6 @@
 #include <QWaitCondition>
 #include <QQueue>
 
-#include "imagerthread.h"
-
 #define COLOR_NUM (1<<8)
 
 class ColorizerThread : public QThread
@@ -22,7 +20,7 @@ public:
 
     QColor& getColorJet(quint16 gray);
     void run();
-    void enable_save(bool save_en);
+    void enable_save(bool save_en, QString& savePath);
     void changeColormap(int colormap);
 
 public slots:
@@ -43,6 +41,7 @@ private:
     bool cond_notified;
 
     bool _save_en=false;
+    QString _save_path;
     int _colormap=0;
 
     QColor* colorVec;

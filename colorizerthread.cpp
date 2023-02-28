@@ -1,6 +1,7 @@
 #include <QTime>
 
 #include "colorizerthread.h"
+#include "imagerthread.h"
 #include "profile.h"
 
 #include <opencv2/core/core.hpp>
@@ -10,7 +11,6 @@
 ColorizerThread::ColorizerThread(QObject *parent)
     :QThread(parent), quit(false), cond_notified(false)
 {
-    colorVecInit();
 }
 
 ColorizerThread::~ColorizerThread() {
@@ -71,8 +71,8 @@ void ColorizerThread::run() {
         }
 
         if (displayMode == DISTANCE_MODE) {
-            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
-            cv::Mat mask = (grayMat != cv::Scalar(0xFFFF));
+            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16SC1, rawImageData);
+            cv::Mat mask = (grayMat > 0);
             cv::cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
             grayMat.convertTo(grayMat8b, CV_8UC1, 1/128.0);
 //            cv::bitwise_not(grayMat8b, grayMat8b_inv);
@@ -81,9 +81,9 @@ void ColorizerThread::run() {
             cv::cvtColor(colorMatMasked, colorMatMasked, cv::COLOR_BGR2RGB);
             qImg = QImage(colorMatMasked.data, colorMat.cols, colorMat.rows, colorMat.step, QImage::Format_RGB888);
         } else if (displayMode == DCS_MODE) {
-            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16UC1, rawImageData);
+            grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_16SC1, rawImageData);
             if (_save_en) {
-                QString filename = QString("D:/DCS/DCS_frame_")+QString::number(QDateTime::currentMSecsSinceEpoch())+".bin";
+                QString filename = _save_path + QString("/") +QString::number(QDateTime::currentMSecsSinceEpoch())+".bin";
                 QFile frameFile(filename);
                 if (!frameFile.open(QIODevice::WriteOnly)){
                     qDebug() << "Cannot open " << filename << " to save DCS frame\r\n";
@@ -92,9 +92,9 @@ void ColorizerThread::run() {
                 frameFile.close();
             }
 
-            grayMat = grayMat * 16; //convert 12bit signed integer to 16bit signed integer by shift right 4 bit
+//            grayMat = grayMat * 16; //convert 12bit signed integer to 16bit signed integer by shift right 4 bit
 
-            grayMat.convertTo(grayMat8b, CV_8UC1, 1/256.0);
+            grayMat.convertTo(grayMat8b, CV_8UC1, 1/16.0, 127.0);
             qImg = QImage(grayMat8b.data, grayMat8b.cols, grayMat8b.rows, grayMat8b.step, QImage::Format_Grayscale8);
         } else {
             grayMat = cv::Mat(imgSize.height(), imgSize.width(), CV_8UC1, rawImageData);
@@ -118,53 +118,11 @@ void ColorizerThread::run() {
     }
 }
 
-void ColorizerThread::enable_save(bool save_en) {
+void ColorizerThread::enable_save(bool save_en, QString& path) {
     _save_en = save_en;
+    _save_path = path;
 }
 
 void ColorizerThread::changeColormap(int colormap) {
     _colormap = colormap;
-}
-
-void colorMap(int val, int& r, int& g, int& b) {
-    int STEP = COLOR_NUM/8;
-    int COLOR_MAX = 256;
-
-    if (val < STEP) {
-        r = 0;
-        g = 0;
-        b = (val+STEP)*COLOR_MAX/(2*STEP);
-    }
-    else if (val < 3*STEP) {
-        r = 0;
-        g = (val - STEP)*COLOR_MAX/(2*STEP);
-        b = COLOR_MAX-1;
-    }
-    else if (val < 5*STEP) {
-        r = (val - 3*STEP)*COLOR_MAX/(2*STEP);
-        g = COLOR_MAX-1;
-        b = COLOR_MAX-1 - r;
-    }
-    else if (val < 7*STEP) {
-        r = COLOR_MAX-1;
-        g = COLOR_MAX-1 - (val - 5*STEP)*COLOR_MAX/(2*STEP);
-        b = 0;
-    }
-    else {
-        r = COLOR_MAX-1 - (val - 7*STEP)*COLOR_MAX/(2*STEP);
-        g = 0;
-        b = 0;
-    }
-}
-
-void ColorizerThread::colorVecInit() {
-    int r, g, b;
-
-    qDebug() << "Init color vec with " << COLOR_NUM << " colors";
-    colorVec = new QColor[COLOR_NUM];
-
-    for (int i = 0; i < COLOR_NUM; i++) {
-        colorMap(i, r, g, b);
-        colorVec[i] = QColor(r, g, b);
-    }
 }
