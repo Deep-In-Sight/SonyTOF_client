@@ -132,7 +132,7 @@ private:
                         lineCnt == 10 || lineCnt == 12 || lineCnt == 13 ||
                         lineCnt == 15 || lineCnt > 16) {
                     int addr = strtol(line.toLocal8Bit().data(), NULL, 16);
-                    qDebug() << "Fmod reg address = 0x" << hex << addr;
+                    qDebug() << "Fmod reg address = 0x" << QString::number(addr, 16);
                     addresses[addressCnt++] = addr;
                 }
 
@@ -199,17 +199,22 @@ private:
         }
     }
 
+    void printReg(i2cReg& r) {
+        qDebug() << QString::number(r.addr, 16) <<
+                    " " << QString::number(r.val, 16);
+    }
+
     void printFreqMod(freqmod* set) {
-        qDebug()<< hex << set->EXCLK_FREQ_MSB.addr << " " << set->EXCLK_FREQ_MSB.val;
-        qDebug()<< hex << set->EXCLK_FREQ_LSB.addr << " " << set->EXCLK_FREQ_LSB.val;
-        qDebug()<< hex << set->PL_RC_VT.addr << " " << set->PL_RC_VT.val;
-        qDebug()<< hex << set->PL_RC_OP.addr << " " << set->PL_RC_OP.val;
-        qDebug()<< hex << set->PL_FC_MX_MSB.addr << " " << set->PL_FC_MX_MSB.val;
-        qDebug()<< hex << set->PL_FC_MX_LSB.addr << " " << set->PL_FC_MX_LSB.val;
-        qDebug()<< hex << set->PL_RC_MX.addr << " " << set->PL_RC_MX.val;
-        qDebug()<< hex << set->PL_RES_MX.addr << " " << set->PL_RES_MX.val;
-        qDebug()<< hex << set->DIVSELPRE.addr << " " << set->DIVSELPRE.val;
-        qDebug()<< hex << set->DIVSEL.addr << " " << set->DIVSEL.val;
+        printReg(set->EXCLK_FREQ_MSB);
+        printReg(set->EXCLK_FREQ_LSB);
+        printReg(set->PL_RC_VT);
+        printReg(set->PL_RC_OP);
+        printReg(set->PL_FC_MX_MSB);
+        printReg(set->PL_FC_MX_LSB);
+        printReg(set->PL_RC_MX);
+        printReg(set->PL_RES_MX);
+        printReg(set->DIVSELPRE);
+        printReg(set->DIVSEL);
     }
 
     void dump_modSettings() {
