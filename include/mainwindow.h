@@ -85,6 +85,7 @@ private:
     void fps_update();
 
     void addColorBar(int colormap);
+    void activate3D(bool en);
 
     Ui::MainWindow *ui;
     SplashScreen* splash;

@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QKeyEvent>
 #include <QFileDialog>
+#include <QTimer>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -61,6 +62,14 @@ MainWindow::MainWindow(QWidget *parent, QString &host, int &port, SplashScreen *
     connect(this, &MainWindow::splashMessage, splash, &SplashScreen::showStatusMessage);
     initializeUI();
     disconnect(this, &MainWindow::splashMessage, splash, &SplashScreen::showStatusMessage);
+
+//    QTimer* timer = new QTimer(this);
+//    timer->setInterval(30);
+//    timer->callOnTimeout([=]() {
+//        QByteArray fakeData(640*480*2, 0x0F);
+//        ui->pclviewer_widget->updateCloud(fakeData, POINTCLOUD_MODE);
+//    });
+//    timer->start();
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -97,6 +106,14 @@ void MainWindow::initializeUI() {
     ui->lineEdit_hostName->setText(host);
     ui->lineEdit_port->setText(QString::number(port));
 
+    ui->pclviewer_widget->hide();
+    ui->pclviewer_widget->setColorStyle(0);
+    ui->pclviewer_widget->setZscale(24);
+    float focal_mm = 5.3;
+    float pixel_um = 10.0;
+    float f = focal_mm / pixel_um * 1e3;
+    ui->pclviewer_widget->setLensIntrinsic(320.0, 240.0, f, f);
+
     imager = new ImagerThread(this, host, port);
 
     connect(imager, &ImagerThread::signalError, this, &MainWindow::showError);
@@ -122,6 +139,8 @@ void MainWindow::initializeUI() {
     int freq = 24;
     ui->lineEdit_fmod->setText(QString::number(freq));
     imager->changeFmod(freq);
+
+
 
     emit splashMessage("Set filter mode", splashAlign, textColor);
     this->on_pushButton_resetFilters_clicked();
@@ -196,10 +215,31 @@ void MainWindow::on_pushButton_connect_clicked()
     initializeUI();
 }
 
+void MainWindow::activate3D(bool en) {
+    if (en) {
+        ui->graphicsView_Main->hide();
+        ui->colorbar_widget->hide();
+        ui->pclviewer_widget->show();
+        disconnect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
+        connect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::updateCloud);
+    } else {
+        ui->graphicsView_Main->show();
+        ui->colorbar_widget->show();
+        ui->pclviewer_widget->hide();
+        connect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
+        disconnect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::updateCloud);
+    }
+}
+
 void MainWindow::on_comboBox_displayMode_currentIndexChanged(int index)
 {
     DISPLAY_MODE mode = (DISPLAY_MODE) index;
-    imager->changeDisplayMode(mode);
+    if (mode < POINTCLOUD_MODE) {
+        activate3D(false);
+        imager->changeDisplayMode(mode);
+    } else {
+        activate3D(true);
+    }
 }
 
 void MainWindow::on_pushButton_Video_clicked()
@@ -222,6 +262,7 @@ void MainWindow::on_lineEdit_fmod_returnPressed()
     int freq = ui->lineEdit_fmod->text().toInt(&okay, 10);
     if (okay && freq >=4 && freq <= 100) {
         imager->changeFmod(freq);
+        ui->pclviewer_widget->setZscale(freq);
         addColorBar(ui->comboBox_colormap->currentIndex());
     } else {
         showError(-1, "Invalid freqency value ");
@@ -335,6 +376,7 @@ void MainWindow::on_comboBox_colormap_currentIndexChanged(int index)
     qDebug() << "colormap changed" ;
     addColorBar(index);
     colorizer->changeColormap(index);
+    ui->pclviewer_widget->setColorStyle(index);
 }
 
 void MainWindow::on_checkBox_medianBlur_toggled(bool checked)

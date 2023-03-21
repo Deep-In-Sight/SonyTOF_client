@@ -18,7 +18,8 @@ enum DISPLAY_MODE : int {
     DCS_MODE = 0,
     AMPLITUDE_MODE_CLAMP,
     AMPLITUDE_MODE_SCALE,
-    DISTANCE_MODE
+    DISTANCE_MODE,
+    POINTCLOUD_MODE
 };
 
 class ImagerThread : public QThread

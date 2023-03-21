@@ -18,7 +18,7 @@ ImagerThread::ImagerThread(QObject *parent, QString hostName, qint16 port)
     this->modFreq = 24;
     this->phaseOffset = 0;
 
-    int Timeout = 5*1000;
+    int Timeout = 1*1000;
     socket = new QTcpSocket;
     socket->connectToHost(hostName, port);
     if(!socket->waitForConnected(Timeout))
