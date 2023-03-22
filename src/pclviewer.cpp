@@ -11,7 +11,10 @@
 
 #if VTK_MAJOR_VERSION > 8
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkSMPTools.h>
 #endif
+
+#include "pclconfig.h"
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -23,14 +26,13 @@ PCLViewer::PCLViewer (QWidget *parent) :
     qvtkWidget = new PCLQVTKWidget(this);
     layout->addWidget(qvtkWidget);
 
-
+    vtkSMPTools::SetBackend("OpenMP");
   // Setup the cloud pointer
-  cloud.reset (new PointCloudT(WIDTH, HEIGHT, PointT(0.0,0.0,0.0,0,0,0,0)));
+    m_downSample = 2;
+  cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample, PointT(0.0,0.0,0.0,0,0,0,0)));
+//  cloud.reset (new PointCloudT(WIDTH, HEIGHT, PointT(0.0,0.0,0.0)));
   // The number of points in the cloud
 //  cloud->resize (WIDTH*HEIGHT);
-
-  m_scale_x = new float[WIDTH];
-  m_scale_y = new float[HEIGHT];
 
   // Set up the QVTK window  
 #if VTK_MAJOR_VERSION > 8
@@ -48,8 +50,12 @@ PCLViewer::PCLViewer (QWidget *parent) :
 
   viewer->addPointCloud (cloud, "cloud");
   viewer->resetCamera ();
-  
+  viewer->addCoordinateSystem();
+
   refreshView();
+
+  config_widget = new pclconfig(nullptr, this);
+  config_widget->setWindowTitle("Pointcloud config");
 
 //  timer = new QTimer(this);
 //  timer->setInterval(30);
@@ -59,6 +65,14 @@ PCLViewer::PCLViewer (QWidget *parent) :
 //  });
 //  timer->start();
 
+}
+
+void PCLViewer::showEvent(QShowEvent* event) {
+    config_widget->show();
+}
+
+void PCLViewer::hideEvent(QHideEvent* event) {
+    config_widget->hide();
 }
 
 void PCLViewer::setZscale(int fmod_mhz) {
@@ -71,14 +85,6 @@ void PCLViewer::setLensIntrinsic(float cx, float cy, float fx, float fy) {
     m_cy = cy;
     m_fx = fx;
     m_fy = fy;
-
-    for (int u = 0; u < WIDTH; u++) {
-        m_scale_x[u] = (u - cx)/ fx;
-    }
-
-    for (int v = 0; v < HEIGHT; v++) {
-        m_scale_y[v] = (v - cy)/fy;
-    }
 }
 
 void PCLViewer::setColorStyle(int colorStyleId) {
@@ -92,21 +98,21 @@ PCLViewer::updateCloud(QByteArray newDepthMap, int mode)
 //        return;
     static bool first_update = true;
 
-    qDebug() << "up";
+//    qDebug() << "up";
     cv::Mat phaseMap(HEIGHT, WIDTH, CV_16SC1, newDepthMap.data());
     cv::Mat phaseMap8b;
     phaseMap.convertTo(phaseMap8b, CV_8UC1, 1/128.0);
     cv::Mat colorMap;
     cv::applyColorMap(phaseMap8b, colorMap, m_colorStyle);
 
-    for (int v = 0; v < HEIGHT; v++) {
-        for (int u = 0; u < WIDTH; u++) {
-            int phase = phaseMap.at<cv::int16_t>(v, u); //row, col
+    for (int v = 0; v < HEIGHT; v+=m_downSample) {
+        for (int u = 0; u < WIDTH; u+=m_downSample) {
+            int16_t phase = phaseMap.at<int16_t>(v, u); //row, col
             float z = m_scale_z * phase;
             cv::Vec3b& color = colorMap.at<cv::Vec3b>(v, u);
-            PointT& p = (*cloud).at(u, v); //col, row
-            p.x = m_scale_x[u] * z;
-            p.y = m_scale_y[v] * z;
+            PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
+            p.x = (u - m_cx) / m_fx * z;
+            p.y = (v - m_cy) / m_fy * z;
             p.z = z;
             if (z >= 0) {
                 p.b = color[0];
@@ -135,4 +141,18 @@ PCLViewer::refreshView()
 #else
   ui->qvtkWidget->update();
 #endif
+}
+
+void
+PCLViewer::resetView() {
+    viewer->resetCameraViewpoint();
+}
+
+void
+PCLViewer::updateDownSampling(int factor) {
+    m_downSample = pow(2, factor);
+    viewer->removePointCloud();
+    cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample, PointT(0.0,0.0,0.0,0,0,0,0)));
+    viewer->addPointCloud(cloud);
+//    viewer->resetCamera();
 }

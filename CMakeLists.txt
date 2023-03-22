@@ -26,17 +26,29 @@ find_package(PCL 1.7.1 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+find_package(VTK REQUIRED)
+set(VTK_SMP_ENABLE_OPENMP ON)
+set(VTK_SMP_ENABLE_STDTHREAD ON)
+set(VTK_SMP_ENABLE_TBB ON)
+set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB UI_FILES forms/*.ui)
 file(GLOB HEADER_FILES include/*.h)
 file(GLOB CXX_FILES src/*.cpp)
+file(GLOB RES_FILES res/*.qrc)
+
 
 add_executable(SonyTOF_client
     ${CXX_FILES}
     ${HEADER_FILES}
     ${UI_FILES}
-    res/resource.qrc
+    ${RES_FILES}
 )
 
-target_link_libraries(SonyTOF_client Qt5::Widgets Qt5::Network Qt5::Concurrent Qt5::OpenGL ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries(SonyTOF_client Qt5::Widgets Qt5::Network Qt5::Concurrent Qt5::OpenGL ${OpenCV_LIBS} ${PCL_LIBRARIES} ${VTK_LIBRARIES})
+vtk_module_autoinit (
+TARGETS SonyTOF_client
+MODULES ${VTK_MODULES}
+)

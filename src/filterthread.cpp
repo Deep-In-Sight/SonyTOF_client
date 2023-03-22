@@ -75,7 +75,6 @@ void FilterThread::run() {
 
         filteredRaw = QByteArray::fromRawData((char*)src.data, src.rows*src.step);
 
-        qDebug() << "filter done " << displayMode;
         emit signalFilterDone(filteredRaw, displayMode);
 
         mutex.lock();
