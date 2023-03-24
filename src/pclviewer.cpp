@@ -20,51 +20,53 @@
 #define HEIGHT 480
 
 PCLViewer::PCLViewer (QWidget *parent) :
-  QWidget (parent)
+    QWidget (parent)
 {
     QHBoxLayout* layout = new QHBoxLayout(this);
     qvtkWidget = new PCLQVTKWidget(this);
     layout->addWidget(qvtkWidget);
 
-    vtkSMPTools::SetBackend("OpenMP");
-  // Setup the cloud pointer
-    m_downSample = 2;
-  cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample, PointT(0.0,0.0,0.0,0,0,0,0)));
-//  cloud.reset (new PointCloudT(WIDTH, HEIGHT, PointT(0.0,0.0,0.0)));
-  // The number of points in the cloud
-//  cloud->resize (WIDTH*HEIGHT);
+    //    vtkSMPTools::Initialize(4);
+    //    vtkSMPTools::SetBackend("Sequential");
 
-  // Set up the QVTK window  
+    // Setup the cloud pointer
+    m_downSample = 1;
+    cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample));
+
+    // Set up the QVTK window
 #if VTK_MAJOR_VERSION > 8
-  auto renderer = vtkSmartPointer<vtkRenderer>::New();
-  auto renderWindow = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
-  renderWindow->AddRenderer(renderer);
-  viewer.reset(new pcl::visualization::PCLVisualizer(renderer, renderWindow, "viewer", false));
-  qvtkWidget->setRenderWindow(viewer->getRenderWindow());
-  viewer->setupInteractor(qvtkWidget->interactor(), qvtkWidget->renderWindow());
+    auto renderer = vtkSmartPointer<vtkRenderer>::New();
+    auto renderWindow = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
+    renderWindow->AddRenderer(renderer);
+    viewer.reset(new pcl::visualization::PCLVisualizer(renderer, renderWindow, "viewer", false));
+    qvtkWidget->setRenderWindow(viewer->getRenderWindow());
+    viewer->setupInteractor(qvtkWidget->interactor(), qvtkWidget->renderWindow());
 #else
-  viewer.reset(new pcl::visualization::PCLVisualizer("viewer", false));
-  ui->qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
-  viewer->setupInteractor(ui->qvtkWidget->GetInteractor(), ui->qvtkWidget->GetRenderWindow());
+    viewer.reset(new pcl::visualization::PCLVisualizer("viewer", false));
+    ui->qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
+    viewer->setupInteractor(ui->qvtkWidget->GetInteractor(), ui->qvtkWidget->GetRenderWindow());
 #endif
 
-  viewer->addPointCloud (cloud, "cloud");
-  viewer->resetCamera ();
-  viewer->addCoordinateSystem();
+    viewer->addPointCloud (cloud, "cloud");
+    viewer->addCoordinateSystem(0.5);
+    // Assuming physical camera's origin is also world's origin
+    // The following align the virtual camera with physical camera,
+    // and put it 1meter behind on the optical center axis
+    // like this:
+    //
+    //     y| /z
+    //      |/__x   (physical)
+    //
+    //  y| /z
+    //   |/__x  (virtual)
+    viewer->setCameraPosition(0.0, 0.0, -1.0,
+                              0.0, 0.0, 0.0,
+                              0.0, 1.0, 0.0); //rotate camera straight
+    viewer->setCameraFieldOfView(3.14/2); //90degree
+    refreshView();
 
-  refreshView();
-
-  config_widget = new pclconfig(nullptr, this);
-  config_widget->setWindowTitle("Pointcloud config");
-
-//  timer = new QTimer(this);
-//  timer->setInterval(30);
-//  timer->callOnTimeout([=]() {
-//    this->updateCloud();
-//    this->refreshView();
-//  });
-//  timer->start();
-
+    config_widget = new PclConfig(nullptr, this);
+    config_widget->setWindowTitle("Pointcloud config");
 }
 
 void PCLViewer::showEvent(QShowEvent* event) {
@@ -73,6 +75,12 @@ void PCLViewer::showEvent(QShowEvent* event) {
 
 void PCLViewer::hideEvent(QHideEvent* event) {
     config_widget->hide();
+}
+
+void PCLViewer::mouseReleaseEvent(QMouseEvent* e) {
+    pcl::visualization::Camera cam;
+    viewer->getCameraParameters(cam);
+    emit viewerDragged(cam);
 }
 
 void PCLViewer::setZscale(int fmod_mhz) {
@@ -92,13 +100,11 @@ void PCLViewer::setColorStyle(int colorStyleId) {
 }
 
 void
-PCLViewer::updateCloud(QByteArray newDepthMap, int mode)
+PCLViewer::onFilterDone(QByteArray newDepthMap, int mode)
 {
-//    if (mode != POINTCLOUD_MODE)
-//        return;
     static bool first_update = true;
 
-//    qDebug() << "up";
+    //    qDebug() << "up";
     cv::Mat phaseMap(HEIGHT, WIDTH, CV_16SC1, newDepthMap.data());
     cv::Mat phaseMap8b;
     phaseMap.convertTo(phaseMap8b, CV_8UC1, 1/128.0);
@@ -126,33 +132,48 @@ PCLViewer::updateCloud(QByteArray newDepthMap, int mode)
     }
     viewer->updatePointCloud(cloud, "cloud");
     refreshView();
-    if (first_update) {
-        first_update = false;
-            viewer->resetCamera();
-    }
+    //    if (first_update) {
+    //        first_update = false;
+    //            viewer->resetCamera();
+    //    }
 
+}
+
+void
+PCLViewer::onViewChanged(pcl::visualization::Camera& c) {
+
+    viewer->setCameraPosition(c.pos[0], c.pos[1], c.pos[2],
+                              c.focal[0], c.focal[1], c.focal[2],
+                              c.view[0], c.view[1], c.view[2]);
+    refreshView();
 }
 
 void
 PCLViewer::refreshView()
 {
 #if VTK_MAJOR_VERSION > 8
-  qvtkWidget->renderWindow()->Render();
+    qvtkWidget->renderWindow()->Render();
 #else
-  ui->qvtkWidget->update();
+    ui->qvtkWidget->update();
 #endif
 }
 
 void
-PCLViewer::resetView() {
-    viewer->resetCameraViewpoint();
+PCLViewer::onViewReset() {
+    viewer->setCameraPosition(0.0, 0.0, -1.0, //put the virtual camera 1 meter behind the physical camera in z direction
+                              0.0, 0.0, 0.0, //point the virtual camera toward world origin
+                              0.0, 1.0, 0.0); //rotate camera straight
+    viewer->setCameraFieldOfView(3.14/2); //90degree
+    pcl::visualization::Camera cam;
+    viewer->getCameraParameters(cam);
+    emit viewerDragged(cam);
+    refreshView();
 }
 
 void
-PCLViewer::updateDownSampling(int factor) {
+PCLViewer::onDownSampleRateChanged(int factor) {
     m_downSample = pow(2, factor);
     viewer->removePointCloud();
-    cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample, PointT(0.0,0.0,0.0,0,0,0,0)));
+    cloud.reset (new PointCloudT(WIDTH/m_downSample, HEIGHT/m_downSample));
     viewer->addPointCloud(cloud);
-//    viewer->resetCamera();
 }

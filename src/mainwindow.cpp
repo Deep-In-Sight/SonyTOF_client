@@ -221,13 +221,13 @@ void MainWindow::activate3D(bool en) {
         ui->colorbar_widget->hide();
         ui->pclviewer_widget->show();
         disconnect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
-        connect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::updateCloud);
+        connect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::onFilterDone);
     } else {
         ui->graphicsView_Main->show();
         ui->colorbar_widget->show();
         ui->pclviewer_widget->hide();
         connect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
-        disconnect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::updateCloud);
+        disconnect(filter, &FilterThread::signalFilterDone, ui->pclviewer_widget, &PCLViewer::onFilterDone);
     }
 }
 

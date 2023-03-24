@@ -39,6 +39,7 @@ file(GLOB HEADER_FILES include/*.h)
 file(GLOB CXX_FILES src/*.cpp)
 file(GLOB RES_FILES res/*.qrc)
 
+add_compile_options(-O3)
 
 add_executable(SonyTOF_client
     ${CXX_FILES}

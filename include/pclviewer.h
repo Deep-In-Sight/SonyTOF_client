@@ -15,7 +15,7 @@ typedef pcl::PointXYZRGBA PointT;
 //typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-class pclconfig;
+class PclConfig;
 
 class PCLViewer : public QWidget
 {
@@ -33,13 +33,19 @@ public:
 
 public slots:
   void
-  updateCloud(QByteArray newDepthMap, int mode);
+  onFilterDone(QByteArray newDepthMap, int mode);
 
   void
-  updateDownSampling(int factor);
+  onDownSampleRateChanged(int factor);
 
   void
-  resetView();
+  onViewChanged(pcl::visualization::Camera& camera);
+
+  void
+  onViewReset();
+
+signals:
+  void viewerDragged(pcl::visualization::Camera& camera);
 
 public:
   pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -52,10 +58,11 @@ public:
 protected:
   virtual void showEvent(QShowEvent* e);
   virtual void hideEvent(QHideEvent* e);
+  virtual void mouseReleaseEvent(QMouseEvent* e);
 
 private:
   PCLQVTKWidget* qvtkWidget;
-  pclconfig* config_widget;
+  PclConfig* config_widget;
   QTimer* timer;
   float m_scale_z;
   float* m_scale_x;

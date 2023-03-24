@@ -3,33 +3,44 @@
 
 #include <QObject>
 #include <QWidget>
-
-
-namespace Ui {
-class pclconfig_widget;
-}
+#include <QPushButton>
+#include <QGroupBox>
+#include "sliderwidget.h"
+#include "pcl/visualization/common/common.h"
 
 class PCLViewer;
 
-class pclconfig : public QWidget
+class PclConfig : public QWidget
 {
     Q_OBJECT
 public:
-    explicit pclconfig(QWidget *parent = nullptr, PCLViewer* viewer = nullptr);
-    ~pclconfig();
+    explicit PclConfig(QWidget *parent = nullptr, PCLViewer* viewer = nullptr);
 
 signals:
-    void downsamplerateChanged(int& factor);
-    void viewPositionChanged(float& x, float& y, float& z);
-    void resetView();
+    void downSampleRateChanged(int& factor);
+    void viewChanged(pcl::visualization::Camera& camera);
+    void viewReset();
 
 private slots:
-    void on_pushButton_resetView_clicked();
-
-    void on_spinBox_point_downsampling_valueChanged(int arg1);
+    void onResetButtonClicked();
+    void onDownSampleRateChanged(float val, int ignored);
+    void onViewGroupChanged(float val, int slider_id);
+    void onViewerDragged(pcl::visualization::Camera& camera);
 
 private:
-    Ui::pclconfig_widget* ui;
+    void setupUI();
+    void connectSignals();
+
+
+private:
+    PCLViewer* m_viewer;
+
+    SliderWidget* downsample_slider;
+    QGroupBox* view_group;
+    QVector<SliderWidget*> sliders;
+    QPushButton* reset_button;
+
+    pcl::visualization::Camera camera;
 };
 
 #endif // PCLCONFIG_H
