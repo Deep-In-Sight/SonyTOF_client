@@ -11,7 +11,7 @@
 
 #if VTK_MAJOR_VERSION > 8
 #include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkSMPTools.h>
+// #include <vtkSMPTools.h>
 #endif
 
 #include "pclconfig.h"

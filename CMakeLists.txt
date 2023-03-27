@@ -4,6 +4,8 @@ project(SonyTOF_client VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -26,12 +28,6 @@ find_package(PCL 1.7.1 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-find_package(VTK REQUIRED)
-set(VTK_SMP_ENABLE_OPENMP ON)
-set(VTK_SMP_ENABLE_STDTHREAD ON)
-set(VTK_SMP_ENABLE_TBB ON)
-set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP")
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB UI_FILES forms/*.ui)
@@ -48,8 +44,4 @@ add_executable(SonyTOF_client
     ${RES_FILES}
 )
 
-target_link_libraries(SonyTOF_client Qt5::Widgets Qt5::Network Qt5::Concurrent Qt5::OpenGL ${OpenCV_LIBS} ${PCL_LIBRARIES} ${VTK_LIBRARIES})
-vtk_module_autoinit (
-TARGETS SonyTOF_client
-MODULES ${VTK_MODULES}
-)
+target_link_libraries(SonyTOF_client Qt5::Widgets Qt5::Network Qt5::Concurrent Qt5::OpenGL ${OpenCV_LIBS} ${PCL_LIBRARIES})
