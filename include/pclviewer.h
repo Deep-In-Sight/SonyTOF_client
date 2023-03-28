@@ -24,7 +24,7 @@ class PCLViewer : public QWidget
 public:
   explicit PCLViewer (QWidget *parent = 0);
   void setZscale(int fmod_mhz);
-  void setLensIntrinsic(float cx, float cy, float fx, float fy);
+
   void setColorStyle(int colorStyleId);
 
 public:
@@ -32,6 +32,10 @@ public:
   refreshView();
 
 public slots:
+
+  void
+  setLensIntrinsic(float fx, float fy, float cx, float cy);
+
   void
   onFilterDone(QByteArray newDepthMap, int mode);
 

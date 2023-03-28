@@ -88,7 +88,7 @@ void PCLViewer::setZscale(int fmod_mhz) {
     m_scale_z = range / 32767;
 }
 
-void PCLViewer::setLensIntrinsic(float cx, float cy, float fx, float fy) {
+void PCLViewer::setLensIntrinsic(float fx, float fy, float cx, float cy) {
     m_cx = cx;
     m_cy = cy;
     m_fx = fx;

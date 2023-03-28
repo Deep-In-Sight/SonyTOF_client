@@ -9,6 +9,7 @@
 #include "colorizerthread.h"
 #include "filterthread.h"
 #include "splashscreen.h"
+#include "lenstablewidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -70,6 +71,8 @@ private slots:
 
     void on_checkBox_hybridmedian_toggled(bool checked);
 
+    void on_pushButton_lensparams_clicked(bool checked);
+
 public slots:
     void showError(int error, const QString &message);
     void showResponse(qint16 val, const QString &message);
@@ -92,6 +95,8 @@ private:
     ImagerThread *imager;
     ColorizerThread *colorizer;
     FilterThread *filter;
+
+    LensTableWidget* lenswidget;
 
     QString host;
     int port;

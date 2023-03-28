@@ -109,10 +109,8 @@ void MainWindow::initializeUI() {
     ui->pclviewer_widget->hide();
     ui->pclviewer_widget->setColorStyle(0);
     ui->pclviewer_widget->setZscale(24);
-    float focal_mm = 5.3;
-    float pixel_um = 10.0;
-    float f = focal_mm / pixel_um * 1e3;
-    ui->pclviewer_widget->setLensIntrinsic(320.0, 240.0, f, f);
+
+    lenswidget = new LensTableWidget();
 
     imager = new ImagerThread(this, host, port);
 
@@ -122,6 +120,7 @@ void MainWindow::initializeUI() {
     connect(imager, &ImagerThread::signalNewFrame, filter, &FilterThread::slotFilter);
     connect(filter, &FilterThread::signalFilterDone, colorizer, &ColorizerThread::colorize);
     connect(colorizer, &ColorizerThread::signalImageDone, this, &MainWindow::imageShow);
+    connect(lenswidget, &LensTableWidget::paramsChanged, ui->pclviewer_widget, &PCLViewer::setLensIntrinsic);
 
     int imagerStatus = -1;
     imager->checkStatus(imagerStatus);
@@ -166,6 +165,8 @@ void MainWindow::initializeUI() {
     addColorBar(ui->comboBox_colormap->currentIndex());
 
     emit splashMessage("Camera configured, starting UI", splashAlign, Qt::white);
+
+    lenswidget->setDefaultParams();
 }
 
 MainWindow::~MainWindow()
@@ -484,5 +485,11 @@ void MainWindow::on_checkBox_saveRaw_stateChanged(int arg1)
 void MainWindow::on_checkBox_hybridmedian_toggled(bool checked)
 {
     filter->toggleFilter(FILTER_HYBRIDMEDIAN, checked);
+}
+
+
+void MainWindow::on_pushButton_lensparams_clicked(bool checked)
+{
+    lenswidget->show();
 }
 

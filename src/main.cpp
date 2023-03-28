@@ -2,6 +2,7 @@
 #include "startupdialog.h"
 #include "splashscreen.h"
 #include <QApplication>
+#include <lenstablewidget.h>
 
 int main(int argc, char *argv[])
 {
