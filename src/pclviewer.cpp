@@ -1,5 +1,4 @@
 #include "pclviewer.h"
-#include "imagerthread.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -99,6 +98,10 @@ void PCLViewer::setColorStyle(int colorStyleId) {
     m_colorStyle = colorStyleId;
 }
 
+void PCLViewer::onAlgoChanged(int algo) {
+    m_algo = algo;
+}
+
 void
 PCLViewer::onFilterDone(QByteArray newDepthMap, int mode)
 {
@@ -111,22 +114,49 @@ PCLViewer::onFilterDone(QByteArray newDepthMap, int mode)
     cv::Mat colorMap;
     cv::applyColorMap(phaseMap8b, colorMap, m_colorStyle);
 
-    for (int v = 0; v < HEIGHT; v+=m_downSample) {
-        for (int u = 0; u < WIDTH; u+=m_downSample) {
-            int16_t phase = phaseMap.at<int16_t>(v, u); //row, col
-            float z = m_scale_z * phase;
-            cv::Vec3b& color = colorMap.at<cv::Vec3b>(v, u);
-            PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
-            p.x = (u - m_cx) / m_fx * z;
-            p.y = (v - m_cy) / m_fy * z;
-            p.z = z;
-            if (z >= 0) {
-                p.b = color[0];
-                p.g = color[1];
-                p.r = color[2];
-                p.a = 255;
-            } else {
-                p.a = 0; //make invalidated point invisible
+    if (m_algo == 0) {
+        for (int v = 0; v < HEIGHT; v+=m_downSample) {
+            for (int u = 0; u < WIDTH; u+=m_downSample) {
+                int16_t phase = phaseMap.at<int16_t>(v, u); //row, col
+                float z = m_scale_z * phase;
+                cv::Vec3b& color = colorMap.at<cv::Vec3b>(v, u);
+                PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
+                p.x = (u - m_cx) / m_fx * z;
+                p.y = (v - m_cy) / m_fy * z;
+                p.z = z;
+                if (z >= 0) {
+                    p.b = color[0];
+                    p.g = color[1];
+                    p.r = color[2];
+                    p.a = 255;
+                } else {
+                    p.a = 0; //make invalidated point invisible
+                }
+            }
+        }
+    } else {
+        for (int v = 0; v < HEIGHT; v+=m_downSample) {
+            for (int u = 0; u < WIDTH; u+=m_downSample) {
+                int16_t phase = phaseMap.at<int16_t>(v, u); //row, col
+                float d = m_scale_z * phase;
+                cv::Vec3b& color = colorMap.at<cv::Vec3b>(v, u);
+                PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
+                float kx = (u - m_cx) / m_fx;
+                float ky = (v - m_cy) / m_fy;
+                float x = d*kx / sqrt(1+kx*kx);
+                float y = d*ky / sqrt(1+ky*ky);
+                float z = sqrt(d*d - x*x - y*y);
+                p.x = x;
+                p.y = y;
+                p.z = z;
+                if (z >= 0) {
+                    p.b = color[0];
+                    p.g = color[1];
+                    p.r = color[2];
+                    p.a = 255;
+                } else {
+                    p.a = 0; //make invalidated point invisible
+                }
             }
         }
     }
@@ -143,8 +173,8 @@ void
 PCLViewer::onViewChanged(pcl::visualization::Camera& c) {
 
     viewer->setCameraPosition(c.pos[0], c.pos[1], c.pos[2],
-                              c.focal[0], c.focal[1], c.focal[2],
-                              c.view[0], c.view[1], c.view[2]);
+            c.focal[0], c.focal[1], c.focal[2],
+            c.view[0], c.view[1], c.view[2]);
     refreshView();
 }
 

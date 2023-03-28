@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QGroupBox>
+#include <QCheckBox>
+
 #include "sliderwidget.h"
 #include "pcl/visualization/common/common.h"
 
@@ -18,11 +20,13 @@ public:
 
 signals:
     void downSampleRateChanged(int& factor);
+    void algoChanged(int algo);
     void viewChanged(pcl::visualization::Camera& camera);
     void viewReset();
 
 private slots:
     void onResetButtonClicked();
+    void onAlgoCheckboxStateChanged(int state);
     void onDownSampleRateChanged(float val, int ignored);
     void onViewGroupChanged(float val, int slider_id);
     void onViewerDragged(pcl::visualization::Camera& camera);
@@ -39,6 +43,7 @@ private:
     QGroupBox* view_group;
     QVector<SliderWidget*> sliders;
     QPushButton* reset_button;
+    QCheckBox* changeAlgo_checkbox;
 
     pcl::visualization::Camera camera;
 };

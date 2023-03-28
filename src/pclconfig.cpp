@@ -18,10 +18,15 @@ void PclConfig::setupUI() {
     downsample_slider = new SliderWidget(this, "Downsample Factor",0, 0, 4, 1.0);
     view_group = new QGroupBox(this);
     reset_button = new QPushButton(this);
+    changeAlgo_checkbox = new QCheckBox(this);
     reset_button->setText("Reset view");
+    changeAlgo_checkbox->setText("D equal Z");
+    changeAlgo_checkbox->setChecked(false);
     layout0->addWidget(downsample_slider);
+    layout0->addWidget(changeAlgo_checkbox);
     layout0->addWidget(view_group);
     layout0->addWidget(reset_button);
+
 
     QVBoxLayout* layout1 = new QVBoxLayout(view_group);
     QStringList labels({"pos_x", "pos_y", "pos_z",
@@ -43,6 +48,7 @@ void PclConfig::connectSignals() {
         connect(sliders[i], &SliderWidget::newValue, this, &PclConfig::onViewGroupChanged);
     }
     connect(reset_button, &QPushButton::clicked, this, &PclConfig::onResetButtonClicked);
+    connect(changeAlgo_checkbox, &QCheckBox::stateChanged, this, &PclConfig::onAlgoCheckboxStateChanged);
 
     // receive from viewer
     connect(m_viewer, &PCLViewer::viewerDragged, this, &PclConfig::onViewerDragged);
@@ -51,6 +57,7 @@ void PclConfig::connectSignals() {
     connect(this, &PclConfig::downSampleRateChanged, m_viewer, &PCLViewer::onDownSampleRateChanged);
     connect(this, &PclConfig::viewChanged, m_viewer, &PCLViewer::onViewChanged);
     connect(this, &PclConfig::viewReset, m_viewer, &PCLViewer::onViewReset);
+    connect(this, &PclConfig::algoChanged, m_viewer, &PCLViewer::onAlgoChanged);
 
 }
 
@@ -103,3 +110,6 @@ void PclConfig::onDownSampleRateChanged(float val, int ignored)
     emit downSampleRateChanged(factor);
 }
 
+void PclConfig::onAlgoCheckboxStateChanged(int state) {
+    emit algoChanged(state);
+}

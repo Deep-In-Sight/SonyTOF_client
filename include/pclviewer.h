@@ -43,6 +43,9 @@ public slots:
   onDownSampleRateChanged(int factor);
 
   void
+  onAlgoChanged(int algo);
+
+  void
   onViewChanged(pcl::visualization::Camera& camera);
 
   void
@@ -77,4 +80,5 @@ private:
   float m_fy;
   int m_colorStyle;
   int m_downSample;
+  int m_algo;
 };
