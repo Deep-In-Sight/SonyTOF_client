@@ -121,8 +121,10 @@ PCLViewer::onFilterDone(QByteArray newDepthMap, int mode)
                 float z = m_scale_z * phase;
                 cv::Vec3b& color = colorMap.at<cv::Vec3b>(v, u);
                 PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
-                p.x = (u - m_cx) / m_fx * z;
-                p.y = (v - m_cy) / m_fy * z;
+                float kx = (u - m_cx) / m_fx;
+                float ky = (v - m_cy) / m_fy;
+                p.x = kx * z;
+                p.y = ky * z;
                 p.z = z;
                 if (z >= 0) {
                     p.b = color[0];
@@ -143,11 +145,10 @@ PCLViewer::onFilterDone(QByteArray newDepthMap, int mode)
                 PointT& p = (*cloud).at(u/m_downSample, v/m_downSample); //col, row
                 float kx = (u - m_cx) / m_fx;
                 float ky = (v - m_cy) / m_fy;
-                float x = d*kx / sqrt(1+kx*kx);
-                float y = d*ky / sqrt(1+ky*ky);
-                float z = sqrt(d*d - x*x - y*y);
-                p.x = x;
-                p.y = y;
+                float z = d / sqrt(1 + kx*kx + ky*ky);
+
+                p.x = kx * z;
+                p.y = ky * z;
                 p.z = z;
                 if (z >= 0) {
                     p.b = color[0];
