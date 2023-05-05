@@ -20,13 +20,15 @@ public:
 
 signals:
     void downSampleRateChanged(int& factor);
-    void algoChanged(int algo);
+    void algoChanged(bool d_equal_z);
+    void lookAtChanged(bool look_at_center);
     void viewChanged(pcl::visualization::Camera& camera);
     void viewReset();
 
 private slots:
     void onResetButtonClicked();
     void onAlgoCheckboxStateChanged(int state);
+    void onLookAtCenterCheckboxStateChanged(int state);
     void onDownSampleRateChanged(float val, int ignored);
     void onViewGroupChanged(float val, int slider_id);
     void onViewerDragged(pcl::visualization::Camera& camera);
@@ -44,6 +46,7 @@ private:
     QVector<SliderWidget*> sliders;
     QPushButton* reset_button;
     QCheckBox* changeAlgo_checkbox;
+    QCheckBox* lookAtCenter_checkbox;
 
     pcl::visualization::Camera camera;
 };

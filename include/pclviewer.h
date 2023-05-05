@@ -43,7 +43,10 @@ public slots:
   onDownSampleRateChanged(int factor);
 
   void
-  onAlgoChanged(int algo);
+  onAlgoChanged(bool d_equal_z);
+
+  void
+  onLookAtChanged(bool lookAtCenter);
 
   void
   onViewChanged(pcl::visualization::Camera& camera);
@@ -68,6 +71,8 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent* e);
 
 private:
+  void updateMinMax(float x, float y, float z);
+  void updateLookAtPoint();
   PCLQVTKWidget* qvtkWidget;
   PclConfig* config_widget;
   QTimer* timer;
@@ -80,5 +85,7 @@ private:
   float m_fy;
   int m_colorStyle;
   int m_downSample;
-  int m_algo;
+  bool m_d_equal_z;
+  bool m_lookAtCenter;
+  float min_x, min_y, min_z, max_x, max_y, max_z;
 };

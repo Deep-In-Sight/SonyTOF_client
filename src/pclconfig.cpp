@@ -21,9 +21,13 @@ void PclConfig::setupUI() {
     changeAlgo_checkbox = new QCheckBox(this);
     reset_button->setText("Reset view");
     changeAlgo_checkbox->setText("D equal Z");
-    changeAlgo_checkbox->setChecked(false);
+    changeAlgo_checkbox->setChecked(true);
+    lookAtCenter_checkbox = new QCheckBox(this);
+    lookAtCenter_checkbox->setText("Look At Center");
+    lookAtCenter_checkbox->setChecked(true);
     layout0->addWidget(downsample_slider);
     layout0->addWidget(changeAlgo_checkbox);
+    layout0->addWidget(lookAtCenter_checkbox);
     layout0->addWidget(view_group);
     layout0->addWidget(reset_button);
 
@@ -49,6 +53,7 @@ void PclConfig::connectSignals() {
     }
     connect(reset_button, &QPushButton::clicked, this, &PclConfig::onResetButtonClicked);
     connect(changeAlgo_checkbox, &QCheckBox::stateChanged, this, &PclConfig::onAlgoCheckboxStateChanged);
+    connect(lookAtCenter_checkbox, &QCheckBox::stateChanged, this, &PclConfig::onLookAtCenterCheckboxStateChanged);
 
     // receive from viewer
     connect(m_viewer, &PCLViewer::viewerDragged, this, &PclConfig::onViewerDragged);
@@ -58,6 +63,7 @@ void PclConfig::connectSignals() {
     connect(this, &PclConfig::viewChanged, m_viewer, &PCLViewer::onViewChanged);
     connect(this, &PclConfig::viewReset, m_viewer, &PCLViewer::onViewReset);
     connect(this, &PclConfig::algoChanged, m_viewer, &PCLViewer::onAlgoChanged);
+    connect(this, &PclConfig::lookAtChanged, m_viewer, &PCLViewer::onLookAtChanged);
 
 }
 
@@ -111,5 +117,22 @@ void PclConfig::onDownSampleRateChanged(float val, int ignored)
 }
 
 void PclConfig::onAlgoCheckboxStateChanged(int state) {
-    emit algoChanged(state);
+    bool isDEqualZ;
+    if (state == Qt::Checked) {
+        isDEqualZ = true;
+    } else {
+	isDEqualZ = false;
+    }
+    emit algoChanged(isDEqualZ);
 }
+
+void PclConfig::onLookAtCenterCheckboxStateChanged(int state) {
+    bool lookAtCenter;
+    if (state == Qt::Checked) {
+	  lookAtCenter = true;
+    } else {
+	  lookAtCenter = false;
+    }
+    emit lookAtChanged(lookAtCenter);
+}
+
